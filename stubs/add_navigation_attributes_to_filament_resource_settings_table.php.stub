@@ -1,0 +1,83 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+/**
+ * Adds the attributes introduced after the first release: the active icon, the
+ * parent navigation item, and the badge's text, colour and tooltip.
+ *
+ * An install created by the current create migration already has these columns,
+ * so every change here is guarded by hasColumn() and the migration is a no-op
+ * on a fresh database. That keeps one migration path correct for both.
+ */
+return new class extends Migration
+{
+    /**
+     * @var array<int, string>
+     */
+    protected array $columns = [
+        'active_icon',
+        'navigation_parent_item',
+        'badge',
+        'badge_color',
+        'badge_tooltip',
+    ];
+
+    public function up(): void
+    {
+        $table = $this->tableName();
+
+        if (! Schema::hasTable($table)) {
+            return;
+        }
+
+        $missing = $this->missingColumns($table);
+
+        if ($missing === []) {
+            return;
+        }
+
+        Schema::table($table, function (Blueprint $blueprint) use ($missing): void {
+            foreach ($missing as $column) {
+                $blueprint->string($column)->nullable();
+            }
+        });
+    }
+
+    public function down(): void
+    {
+        $table = $this->tableName();
+
+        if (! Schema::hasTable($table)) {
+            return;
+        }
+
+        $present = array_values(array_diff($this->columns, $this->missingColumns($table)));
+
+        if ($present === []) {
+            return;
+        }
+
+        Schema::table($table, function (Blueprint $blueprint) use ($present): void {
+            $blueprint->dropColumn($present);
+        });
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function missingColumns(string $table): array
+    {
+        return array_values(array_filter(
+            $this->columns,
+            fn (string $column): bool => ! Schema::hasColumn($table, $column),
+        ));
+    }
+
+    protected function tableName(): string
+    {
+        return config('filament-resource-manager.table_name', 'filament_resource_settings');
+    }
+};

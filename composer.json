@@ -1,0 +1,56 @@
+{
+    "name": "mahmoudsehsah/filament-resource-manager",
+    "description": "Manage Filament resource navigation - label, icon, group, sort and visibility - from an admin UI. Supports Filament v3, v4 and v5.",
+    "keywords": [
+        "laravel",
+        "filament",
+        "filament-plugin",
+        "navigation",
+        "resources",
+        "admin"
+    ],
+    "homepage": "https://github.com/mahmoudsehsah/filament-resource-manager",
+    "license": "MIT",
+    "version": "0.1.1",
+    "authors": [
+        {
+            "name": "Mahmoud Sehsah",
+            "email": "mahmoudsehsah36@gmail.com",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^8.1",
+        "filament/filament": "^3.2|^4.0|^5.0",
+        "illuminate/console": "^10.0|^11.0|^12.0|^13.0",
+        "illuminate/contracts": "^10.0|^11.0|^12.0|^13.0",
+        "illuminate/database": "^10.0|^11.0|^12.0|^13.0",
+        "illuminate/support": "^10.0|^11.0|^12.0|^13.0"
+    },
+    "require-dev": {
+        "laravel/pint": "^1.13",
+        "orchestra/testbench": "^8.0|^9.0|^10.0|^11.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "MahmoudSehsah\\FilamentResourceManager\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "MahmoudSehsah\\FilamentResourceManager\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "MahmoudSehsah\\FilamentResourceManager\\FilamentResourceManagerServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

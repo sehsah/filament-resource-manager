@@ -1,0 +1,7 @@
+/vendor
+/node_modules
+composer.lock
+.phpunit.result.cache
+.idea
+.vscode
+.DS_Store
