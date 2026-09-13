@@ -5,18 +5,14 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Adds the attributes introduced after the first release: the active icon, the
- * parent navigation item, and the badge's text, colour and tooltip.
+ * Adds attributes introduced after the first release.
  *
- * An install created by the current create migration already has these columns,
- * so every change here is guarded by hasColumn() and the migration is a no-op
- * on a fresh database. That keeps one migration path correct for both.
+ * Fresh installations already receive these columns from the create migration.
+ * The guards keep this migration safe for both fresh and upgraded databases.
  */
 return new class extends Migration
 {
-    /**
-     * @var array<int, string>
-     */
+    /** @var array<int, string> */
     protected array $columns = [
         'active_icon',
         'navigation_parent_item',

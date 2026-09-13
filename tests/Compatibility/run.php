@@ -126,3 +126,19 @@ if ($components === []) {
     exit(1);
 }
 echo '  ok    formComponents() built '.count($components)." sections\n";
+
+// Each panel must retain its own authorization callback. A single global
+// plugin instance would make the last registered panel's rule win everywhere.
+$pluginClass = "{$ns}FilamentResourceManagerPlugin";
+$adminPanel = new \Filament\Panel('admin');
+$appPanel = new \Filament\Panel('app');
+$adminPlugin = (new $pluginClass)->authorize(fn (): bool => true);
+$appPlugin = (new $pluginClass)->authorize(fn (): bool => false);
+$adminPlugin->register($adminPanel);
+$appPlugin->register($appPanel);
+
+if (! $pluginClass::isAuthorized($adminPanel) || $pluginClass::isAuthorized($appPanel)) {
+    fwrite(STDERR, "  FAIL  panel authorization callbacks are not isolated\n");
+    exit(1);
+}
+echo "  ok    panel authorization callbacks are isolated\n";

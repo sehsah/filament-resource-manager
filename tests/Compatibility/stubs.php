@@ -3,7 +3,15 @@
 // source for the requested major. Loading the package's classes against these
 // makes PHP itself enforce override compatibility.
 
-namespace Filament { class Panel { public function getId(): string { return 'admin'; } public function getResources(): array { return []; } } }
+namespace Filament {
+    class Panel {
+        protected array $resources = [];
+        public function __construct(protected string $id = 'admin') {}
+        public function getId(): string { return $this->id; }
+        public function getResources(): array { return $this->resources; }
+        public function resources(array $resources): static { $this->resources = array_merge($this->resources, $resources); return $this; }
+    }
+}
 
 namespace Filament\Support\Components { class ViewComponent { public static function make(...$a): static { return new static; } public function __call($m, $a) { return $this; } public static function __callStatic($m, $a) { return new static; } } }
 

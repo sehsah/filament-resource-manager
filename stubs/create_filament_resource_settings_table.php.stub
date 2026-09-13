@@ -37,6 +37,7 @@ return new class extends Migration
 
             $table->string('default_label')->nullable();
             $table->string('default_icon')->nullable();
+            $table->string('default_navigation_group')->nullable();
             $table->boolean('is_orphaned')->default(false);
 
             $table->timestamps();

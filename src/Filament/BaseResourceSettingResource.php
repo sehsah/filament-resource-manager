@@ -63,7 +63,7 @@ abstract class BaseResourceSettingResource extends Resource
 
     public static function canAccess(): bool
     {
-        return FilamentResourceManagerPlugin::isAuthorized();
+        return FilamentResourceManagerPlugin::isAuthorized(ResourceDiscovery::panel());
     }
 
     public static function canViewAny(): bool
@@ -116,11 +116,11 @@ abstract class BaseResourceSettingResource extends Resource
                     ->searchable(['label', 'default_label'])
                     ->sortable(['label']),
 
-                TextColumn::make('navigation_group')
+                TextColumn::make('effective_navigation_group')
                     ->label(__('filament-resource-manager::manager.columns.group'))
                     ->placeholder('—')
                     ->badge()
-                    ->sortable(),
+                    ->sortable(['navigation_group']),
 
                 TextColumn::make('sort')
                     ->label(__('filament-resource-manager::manager.columns.sort'))
@@ -230,6 +230,7 @@ abstract class BaseResourceSettingResource extends Resource
                     TextInput::make('navigation_group')
                         ->label(__('filament-resource-manager::manager.fields.group'))
                         ->helperText(__('filament-resource-manager::manager.fields.group_hint'))
+                        ->placeholder(fn ($record): ?string => $record?->default_navigation_group)
                         ->datalist(fn (): array => static::knownGroups())
                         ->prefixIcon(static::safeIcon('heroicon-o-folder'))
                         ->maxLength(255),
@@ -357,10 +358,14 @@ abstract class BaseResourceSettingResource extends Resource
     {
         try {
             return static::getEloquentQuery()
-                ->whereNotNull('navigation_group')
-                ->distinct()
-                ->pluck('navigation_group')
+                ->get(['navigation_group', 'default_navigation_group'])
+                ->flatMap(fn ($record): array => [
+                    $record->navigation_group,
+                    $record->default_navigation_group,
+                ])
                 ->filter()
+                ->unique()
+                ->sort()
                 ->values()
                 ->all();
         } catch (\Throwable) {

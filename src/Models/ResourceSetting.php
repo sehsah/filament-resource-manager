@@ -21,6 +21,7 @@ use MahmoudSehsah\FilamentResourceManager\Support\OverrideRepository;
  * @property string|null $badge_tooltip
  * @property string|null $default_label
  * @property string|null $default_icon
+ * @property string|null $default_navigation_group
  * @property bool $is_orphaned
  */
 class ResourceSetting extends Model
@@ -74,6 +75,13 @@ class ResourceSetting extends Model
     public function getEffectiveIconAttribute(): ?string
     {
         return filled($this->icon) ? $this->icon : $this->default_icon;
+    }
+
+    public function getEffectiveNavigationGroupAttribute(): ?string
+    {
+        return filled($this->navigation_group)
+            ? $this->navigation_group
+            : $this->default_navigation_group;
     }
 
     /**

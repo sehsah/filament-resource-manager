@@ -22,9 +22,9 @@ Known divergences covered here:
 | `getSlug()` | no arguments | `?Panel $panel = null` |
 | `form()` | `Form $form): Form` | `Schema $schema): Schema` |
 
-The first three are handled by the per-major subclasses in `src/Filament/V3` and
-`src/Filament/V4`. The fourth is sidestepped: the manager screen is edited
-inline in the table and declares no form at all.
+All four are handled by the per-major subclasses in `src/Filament/V3` and
+`src/Filament/V4`, while their shared form fields remain in
+`BaseResourceSettingResource::formComponents()`.
 
 If you add a method to `BaseResourceSettingResource` that overrides something
 Filament declares, re-run this check before releasing.

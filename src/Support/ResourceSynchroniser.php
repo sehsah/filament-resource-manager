@@ -51,9 +51,12 @@ class ResourceSynchroniser
         $highestSort = (int) static::query()->where('panel_id', $panelId)->max('sort');
 
         foreach ($resources as $resource) {
+            $defaultGroup = ResourceDiscovery::defaultGroup($resource);
+
             $defaults = [
                 'default_label' => ResourceDiscovery::defaultLabel($resource),
                 'default_icon' => ResourceDiscovery::defaultIcon($resource),
+                'default_navigation_group' => $defaultGroup,
                 'is_orphaned' => false,
             ];
 
@@ -64,7 +67,6 @@ class ResourceSynchroniser
                 static::query()->create([
                     'panel_id' => $panelId,
                     'resource_class' => $resource,
-                    'navigation_group' => ResourceDiscovery::defaultGroup($resource),
                     'sort' => ResourceDiscovery::defaultSort($resource) ?? ++$highestSort,
                     'is_visible' => true,
                     ...$defaults,
@@ -73,6 +75,16 @@ class ResourceSynchroniser
                 $created++;
 
                 continue;
+            }
+
+            // Older releases stored the discovered group in the override
+            // column. Clear it when it is equivalent to a known default so
+            // later changes in the resource class can flow through naturally.
+            if (filled($row->navigation_group) && (
+                $row->navigation_group === $row->default_navigation_group
+                || ($row->default_navigation_group === null && $row->navigation_group === $defaultGroup)
+            )) {
+                $row->navigation_group = null;
             }
 
             $row->fill($defaults);

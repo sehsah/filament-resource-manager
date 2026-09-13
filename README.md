@@ -149,7 +149,7 @@ identical in v3, v4 and v5, and the package is built on them:
 - `Filament\Actions\Action`, `ListRecords`/`EditRecord::getHeaderActions()`, `Page::route()`
 - `Resource::canAccess()`, `canViewAny()`, `getNavigationSort()`
 
-Three signatures did change in v4, and are handled by thin per-version subclasses
+Four signatures did change in v4, and are handled by thin per-version subclasses
 in `src/Filament/V3` and `src/Filament/V4` (v5 shares the v4 variant):
 
 | | v3 | v4 / v5 |
@@ -160,7 +160,6 @@ in `src/Filament/V3` and `src/Filament/V4` (v5 shares the v4 variant):
 | `getSlug()` | no arguments | `?Panel $panel = null` |
 | `Section` | `Filament\Forms\Components` | `Filament\Schemas\Components` |
 | `EditAction` | `Filament\Tables\Actions` | `Filament\Actions` |
-| `getSlug()` | no arguments | `?Panel $panel = null` |
 
 `Resource::form()` also changed — it receives a `Form` in v3 and a `Schema` in
 v4/v5 — so each subclass declares its own `form()`, and both hand it the one
