@@ -47,6 +47,7 @@ trait EditsResourceSetting
                         'active_icon' => null,
                         'navigation_group' => null,
                         'navigation_parent_item' => null,
+                        'parent_resource_class' => null,
                         'badge' => null,
                         'badge_color' => null,
                         'badge_tooltip' => null,

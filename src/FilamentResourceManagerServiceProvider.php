@@ -21,6 +21,7 @@ class FilamentResourceManagerServiceProvider extends ServiceProvider
     {
         $this->bindNavigationManager();
         $this->registerTranslations();
+        $this->registerViews();
         $this->registerPublishing();
 
         if ($this->app->runningInConsole()) {
@@ -51,6 +52,11 @@ class FilamentResourceManagerServiceProvider extends ServiceProvider
     protected function registerTranslations(): void
     {
         $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'filament-resource-manager');
+    }
+
+    protected function registerViews(): void
+    {
+        $this->loadViewsFrom(__DIR__.'/../resources/views', 'filament-resource-manager');
     }
 
     protected function registerPublishing(): void

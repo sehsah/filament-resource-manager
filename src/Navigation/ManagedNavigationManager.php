@@ -77,6 +77,14 @@ class ManagedNavigationManager extends NavigationManager
             }
         }
 
+        $labelsByResource = [];
+
+        foreach ($overrides as $resource => $override) {
+            $labelsByResource[$resource] = filled($override['label'] ?? null)
+                ? (string) $override['label']
+                : ResourceDiscovery::defaultLabel($resource);
+        }
+
         foreach ($this->navigationItems as $item) {
             $resource = $this->resolveResource($item, $byKey, $byUrl);
 
@@ -84,7 +92,7 @@ class ManagedNavigationManager extends NavigationManager
                 continue;
             }
 
-            $this->applyOverride($item, $overrides[$resource]);
+            $this->applyOverride($item, $overrides[$resource], $labelsByResource);
         }
     }
 
@@ -120,7 +128,11 @@ class ManagedNavigationManager extends NavigationManager
     /**
      * @param  array<string, mixed>  $override
      */
-    protected function applyOverride(NavigationItem $item, array $override): void
+    protected function applyOverride(
+        NavigationItem $item,
+        array $override,
+        array $labelsByResource = [],
+    ): void
     {
         if (($override['is_visible'] ?? true) === false) {
             $item->hidden();
@@ -140,11 +152,17 @@ class ManagedNavigationManager extends NavigationManager
             $item->activeIcon($override['active_icon']);
         }
 
-        if (filled($override['navigation_group'] ?? null)) {
+        if (($override['navigation_group_overridden'] ?? false) === true) {
+            $item->group($override['navigation_group'] ?? null);
+        } elseif (filled($override['navigation_group'] ?? null)) {
             $item->group($override['navigation_group']);
         }
 
-        if (filled($override['navigation_parent_item'] ?? null)) {
+        $parentResource = $override['parent_resource_class'] ?? null;
+
+        if (is_string($parentResource) && filled($labelsByResource[$parentResource] ?? null)) {
+            $item->parentItem($labelsByResource[$parentResource]);
+        } elseif (filled($override['navigation_parent_item'] ?? null)) {
             $item->parentItem($override['navigation_parent_item']);
         }
 

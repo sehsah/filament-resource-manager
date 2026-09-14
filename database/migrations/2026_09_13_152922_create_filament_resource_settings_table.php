@@ -28,6 +28,7 @@ return new class extends Migration
             $table->string('active_icon')->nullable();
             $table->string('navigation_group')->nullable();
             $table->string('navigation_parent_item')->nullable();
+            $table->string('parent_resource_class')->nullable();
             $table->integer('sort')->nullable();
             $table->boolean('is_visible')->default(true);
 

@@ -62,6 +62,7 @@ namespace Filament\Resources\Pages {
         public static function route(string $p): PageRegistration { return new PageRegistration; }
         public static function getResource(): string { return ''; }
         public function mount(): void {}
+        public function getView(): string { return ''; }
         public function getTitle(): string { return ''; }
         public function getSubheading(): ?string { return null; }
         protected function getHeaderActions(): array { return []; }

@@ -16,6 +16,7 @@ return new class extends Migration
     protected array $columns = [
         'active_icon',
         'navigation_parent_item',
+        'parent_resource_class',
         'badge',
         'badge_color',
         'badge_tooltip',

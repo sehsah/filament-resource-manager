@@ -101,6 +101,8 @@ class ResourceSynchroniser
             ->where('is_orphaned', false)
             ->update(['is_orphaned' => true]);
 
+        ProfileManager::syncPanel($panelId ?? '__default__', $resources);
+
         return [
             'created' => $created,
             'updated' => $updated,

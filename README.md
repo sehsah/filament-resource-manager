@@ -145,7 +145,8 @@ identical in v3, v4 and v5, and the package is built on them:
 - `Filament\Contracts\Plugin` (byte-for-byte identical)
 - `NavigationManager`, its container binding, and `NavigationItem`'s mutators
 - `Table`, `TextColumn`, `IconColumn`, `ToggleColumn`, `reorderable()`
-- `TextInput`, `Select`, `Toggle` (the `Section` layout component only moved namespace)
+- `TextInput`, `Select` with `searchable()`/`allowHtml()`, `Toggle` (the `Section`
+  layout component only moved namespace)
 - `Filament\Actions\Action`, `ListRecords`/`EditRecord::getHeaderActions()`, `Page::route()`
 - `Resource::canAccess()`, `canViewAny()`, `getNavigationSort()`
 
@@ -175,6 +176,9 @@ See `config/filament-resource-manager.php`:
 - `table_name`, `model` — swap the table or extend the model
 - `auto_sync` — sync on page open
 - `cache` — overrides are cached and flushed on every write
+- `icons` — which icon sets the picker offers, how many results a search returns,
+  and the catalogue's cache. The list is built by scanning the sets Blade Icons
+  has registered, so call `IconCatalog::flush()` after installing a new one
 - `excluded_resources` — resource classes the manager should ignore
 - `gate` — an ability checked when no `authorize()` closure is set
 - `navigation` — the manager's own icon, group, sort, slug and registration

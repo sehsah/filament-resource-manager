@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 use MahmoudSehsah\FilamentResourceManager\FilamentResourceManagerPlugin;
 use MahmoudSehsah\FilamentResourceManager\Models\ResourceSetting;
 use MahmoudSehsah\FilamentResourceManager\Support\Compat;
+use MahmoudSehsah\FilamentResourceManager\Support\IconCatalog;
 use MahmoudSehsah\FilamentResourceManager\Support\ResourceDiscovery;
 
 /**
@@ -195,27 +196,9 @@ abstract class BaseResourceSettingResource extends Resource
                         ->prefixIcon(static::safeIcon('heroicon-o-pencil-square'))
                         ->maxLength(255),
 
-                    // The prefix renders whatever icon name is in the field, so
-                    // an administrator sees the icon itself rather than a string
-                    // they have to guess at. onBlur keeps it to one round trip
-                    // per edit instead of one per keystroke.
-                    TextInput::make('icon')
-                        ->label(__('filament-resource-manager::manager.fields.icon'))
-                        ->helperText(__('filament-resource-manager::manager.fields.icon_hint'))
-                        ->placeholder(fn ($record): ?string => $record?->default_icon)
-                        ->live(onBlur: true)
-                        ->prefixIcon(fn ($state): ?string => static::safeIcon($state)
-                            ?? static::safeIcon('heroicon-o-sparkles'))
-                        ->maxLength(255),
+                    static::iconField('icon'),
 
-                    TextInput::make('active_icon')
-                        ->label(__('filament-resource-manager::manager.fields.active_icon'))
-                        ->helperText(__('filament-resource-manager::manager.fields.active_icon_hint'))
-                        ->placeholder(fn ($record): ?string => $record?->icon ?: $record?->default_icon)
-                        ->live(onBlur: true)
-                        ->prefixIcon(fn ($state): ?string => static::safeIcon($state)
-                            ?? static::safeIcon('heroicon-o-sparkles'))
-                        ->maxLength(255),
+                    static::iconField('active_icon'),
 
                     Toggle::make('is_visible')
                         ->label(__('filament-resource-manager::manager.fields.is_visible'))
@@ -235,11 +218,13 @@ abstract class BaseResourceSettingResource extends Resource
                         ->prefixIcon(static::safeIcon('heroicon-o-folder'))
                         ->maxLength(255),
 
-                    TextInput::make('navigation_parent_item')
+                    Select::make('parent_resource_class')
                         ->label(__('filament-resource-manager::manager.fields.parent_item'))
                         ->helperText(__('filament-resource-manager::manager.fields.parent_item_hint'))
-                        ->prefixIcon(static::safeIcon('heroicon-o-bars-3-bottom-left'))
-                        ->maxLength(255),
+                        ->options(fn ($record): array => static::parentResourceOptions($record))
+                        ->searchable()
+                        ->preload()
+                        ->native(false),
 
                     TextInput::make('sort')
                         ->label(__('filament-resource-manager::manager.fields.sort'))
@@ -274,6 +259,46 @@ abstract class BaseResourceSettingResource extends Resource
                 ])
                 ->columns(3),
         ];
+    }
+
+    /**
+     * An icon field: a searchable picker when the installed icon sets could be
+     * enumerated, and the original free-text input with a live preview when they
+     * could not. Falling back keeps a custom or unscannable icon set usable
+     * instead of presenting an empty dropdown.
+     */
+    public static function iconField(string $name): mixed
+    {
+        $label = __("filament-resource-manager::manager.fields.{$name}");
+        $helper = __("filament-resource-manager::manager.fields.{$name}_hint");
+
+        $placeholder = $name === 'active_icon'
+            ? fn ($record): ?string => $record?->icon ?: $record?->default_icon
+            : fn ($record): ?string => $record?->default_icon;
+
+        if (IconCatalog::names() === []) {
+            return TextInput::make($name)
+                ->label($label)
+                ->helperText($helper)
+                ->placeholder($placeholder)
+                ->live(onBlur: true)
+                ->prefixIcon(fn ($state): ?string => static::safeIcon($state)
+                    ?? static::safeIcon('heroicon-o-sparkles'))
+                ->maxLength(255);
+        }
+
+        return Select::make($name)
+            ->label($label)
+            ->helperText($helper)
+            ->placeholder($placeholder)
+            ->options(fn (): array => IconCatalog::options())
+            ->searchable()
+            ->getSearchResultsUsing(fn (?string $search): array => IconCatalog::search($search))
+            ->getOptionLabelUsing(fn ($value): ?string => IconCatalog::label(
+                is_string($value) ? $value : null,
+            ))
+            ->allowHtml()
+            ->native(false);
     }
 
     /**
@@ -367,6 +392,24 @@ abstract class BaseResourceSettingResource extends Resource
                 ->unique()
                 ->sort()
                 ->values()
+                ->all();
+        } catch (\Throwable) {
+            return [];
+        }
+    }
+
+    /** @return array<string, string> */
+    public static function parentResourceOptions(?Model $record = null): array
+    {
+        try {
+            return static::getEloquentQuery()
+                ->when($record?->getKey(), fn ($query, $key) => $query->whereKeyNot($key))
+                ->orderBy('sort')
+                ->get()
+                ->mapWithKeys(fn ($item): array => [
+                    $item->resource_class => ($item->effective_label ?: class_basename($item->resource_class))
+                        .' · '.class_basename($item->resource_class),
+                ])
                 ->all();
         } catch (\Throwable) {
             return [];

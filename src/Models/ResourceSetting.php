@@ -14,6 +14,7 @@ use MahmoudSehsah\FilamentResourceManager\Support\OverrideRepository;
  * @property string|null $active_icon
  * @property string|null $navigation_group
  * @property string|null $navigation_parent_item
+ * @property string|null $parent_resource_class
  * @property int|null $sort
  * @property bool $is_visible
  * @property string|null $badge

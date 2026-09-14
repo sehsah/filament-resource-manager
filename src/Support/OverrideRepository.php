@@ -29,6 +29,7 @@ class OverrideRepository
         'active_icon',
         'navigation_group',
         'navigation_parent_item',
+        'parent_resource_class',
         'sort',
         'badge',
         'badge_color',
@@ -50,13 +51,18 @@ class OverrideRepository
      */
     public static function forPanel(?string $panelId): array
     {
-        $memoKey = $panelId ?? '__default__';
+        $profile = ProfileResolver::resolve(ResourceDiscovery::panel());
+        $memoKey = implode('.', [
+            $panelId ?? '__default__',
+            $profile?->getKey() ?? 'legacy',
+            $profile?->published_version_id ?? 'current',
+        ]);
 
         if (array_key_exists($memoKey, static::$memo)) {
             return static::$memo[$memoKey];
         }
 
-        return static::$memo[$memoKey] = static::load($panelId);
+        return static::$memo[$memoKey] = static::load($panelId, $profile);
     }
 
     /**
@@ -103,13 +109,15 @@ class OverrideRepository
     /**
      * @return array<string, array<string, mixed>>
      */
-    protected static function load(?string $panelId): array
+    protected static function load(?string $panelId, ?Model $profile = null): array
     {
         if (! static::tableExists()) {
             return [];
         }
 
-        $resolve = fn (): array => static::query($panelId);
+        $resolve = fn (): array => $profile instanceof Model
+            ? static::queryProfile($profile)
+            : static::query($panelId);
 
         if (! config('filament-resource-manager.cache.enabled', true)) {
             return $resolve();
@@ -117,7 +125,11 @@ class OverrideRepository
 
         try {
             return static::cache()->remember(
-                static::cacheKey($panelId),
+                static::cacheKey(
+                    $panelId,
+                    $profile?->getKey(),
+                    $profile?->published_version_id,
+                ),
                 (int) config('filament-resource-manager.cache.ttl', 3600),
                 $resolve,
             );
@@ -159,6 +171,42 @@ class OverrideRepository
         }
     }
 
+    /** @return array<string, array<string, mixed>> */
+    protected static function queryProfile(Model $profile): array
+    {
+        try {
+            $version = $profile->publishedVersion()->first();
+
+            if (! $version instanceof Model) {
+                return [];
+            }
+
+            $overrides = [];
+
+            foreach ((array) $version->snapshot as $item) {
+                $resource = $item['resource_class'] ?? null;
+
+                if (! is_string($resource) || ($item['is_orphaned'] ?? false)) {
+                    continue;
+                }
+
+                $override = [];
+
+                foreach (static::ATTRIBUTES as $attribute) {
+                    $override[$attribute] = $item[$attribute] ?? null;
+                }
+
+                $override['navigation_group_overridden'] = (bool) ($item['navigation_group_overridden'] ?? false);
+                $override['is_visible'] = (bool) ($item['is_visible'] ?? true);
+                $overrides[$resource] = $override;
+            }
+
+            return $overrides;
+        } catch (Throwable) {
+            return [];
+        }
+    }
+
     protected static function tableExists(): bool
     {
         try {
@@ -183,11 +231,19 @@ class OverrideRepository
         }
     }
 
-    protected static function cacheKey(?string $panelId): string
+    protected static function cacheKey(
+        ?string $panelId,
+        int|string|null $profileId = null,
+        int|string|null $versionId = null,
+    ): string
     {
         $base = (string) config('filament-resource-manager.cache.key', 'filament-resource-manager.overrides');
 
-        return $base.'.'.($panelId ?? 'default');
+        $key = $base.'.'.($panelId ?? 'default');
+
+        return $profileId === null
+            ? $key
+            : $key.'.profile.'.$profileId.'.version.'.($versionId ?? 'none');
     }
 
     protected static function cache(): CacheRepository

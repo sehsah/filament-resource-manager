@@ -29,6 +29,12 @@ trait ListsResourceSettings
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('studio')
+                ->label(__('filament-resource-manager::manager.actions.studio'))
+                ->icon('heroicon-o-swatch')
+                ->color('primary')
+                ->url(static::getResource()::getUrl('studio')),
+
             Action::make('sync')
                 ->label(__('filament-resource-manager::manager.actions.sync'))
                 ->icon('heroicon-o-arrow-path')
@@ -56,6 +62,7 @@ trait ListsResourceSettings
                         'active_icon' => null,
                         'navigation_group' => null,
                         'navigation_parent_item' => null,
+                        'parent_resource_class' => null,
                         'badge' => null,
                         'badge_color' => null,
                         'badge_tooltip' => null,

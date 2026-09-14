@@ -24,6 +24,31 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Navigation profiles
+    |--------------------------------------------------------------------------
+    |
+    | Profiles keep a mutable draft and an immutable published version. The
+    | optional role resolver receives the authenticated user and should return
+    | role names or IDs when the application does not use Spatie Permission.
+    |
+    */
+
+    'profiles' => [
+        'enabled' => true,
+        'models' => [
+            'profile' => MahmoudSehsah\FilamentResourceManager\Models\NavigationProfile::class,
+            'item' => MahmoudSehsah\FilamentResourceManager\Models\NavigationProfileItem::class,
+            'version' => MahmoudSehsah\FilamentResourceManager\Models\NavigationProfileVersion::class,
+        ],
+        'tables' => [
+            'profiles' => 'filament_navigation_profiles',
+            'items' => 'filament_navigation_profile_items',
+            'versions' => 'filament_navigation_profile_versions',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Automatic sync
     |--------------------------------------------------------------------------
     |
@@ -51,6 +76,29 @@ return [
         'store' => null,
         'ttl' => 3600,
         'key' => 'filament-resource-manager.overrides',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Icon picker
+    |--------------------------------------------------------------------------
+    |
+    | The icon fields offer whatever icon sets Blade Icons has registered. That
+    | list is built by scanning those sets from disk, so it is cached.
+    |
+    | "sets" limits the picker to particular set prefixes, e.g. ['heroicon'];
+    | leave it empty to offer every registered set. "limit" is how many icons a
+    | search returns, and "max" caps the catalogue itself.
+    |
+    */
+
+    'icons' => [
+        'cache' => true,
+        'cache_key' => 'filament-resource-manager.icons',
+        'cache_ttl' => 86400,
+        'sets' => [],
+        'limit' => 50,
+        'max' => 5000,
     ],
 
     /*

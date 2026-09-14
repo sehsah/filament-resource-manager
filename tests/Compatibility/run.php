@@ -52,13 +52,19 @@ $classes = [
     "{$ns}Filament\\{$variant}\\ResourceSettingResource",
     "{$ns}Filament\\{$variant}\\Pages\\ListResourceSettings",
     "{$ns}Filament\\{$variant}\\Pages\\EditResourceSetting",
+    "{$ns}Filament\\{$variant}\\Pages\\NavigationStudio",
     "{$ns}Navigation\\ManagedNavigationManager",
     "{$ns}FilamentResourceManagerPlugin",
     "{$ns}FilamentResourceManagerServiceProvider",
     "{$ns}Models\\ResourceSetting",
+    "{$ns}Models\\NavigationProfile",
+    "{$ns}Models\\NavigationProfileItem",
+    "{$ns}Models\\NavigationProfileVersion",
     "{$ns}Support\\Compat",
     "{$ns}Support\\ResourceDiscovery",
     "{$ns}Support\\ResourceSynchroniser",
+    "{$ns}Support\\ProfileManager",
+    "{$ns}Support\\ProfileResolver",
     "{$ns}Support\\OverrideRepository",
     "{$ns}Commands\\SyncResourcesCommand",
 ];
@@ -101,7 +107,7 @@ echo "  ok    implements Filament\\Contracts\\Plugin\n";
 // The edit page must be routable, and the form fields must build against the
 // component classes this major actually ships.
 $pages = $resource::getPages();
-foreach (['index', 'edit'] as $page) {
+foreach (['index', 'edit', 'studio'] as $page) {
     if (! array_key_exists($page, $pages)) {
         fwrite(STDERR, "  FAIL  missing '$page' page registration\n");
         exit(1);

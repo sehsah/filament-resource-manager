@@ -46,6 +46,7 @@ class ResourceSettingResource extends BaseResourceSettingResource
         return [
             'index' => Pages\ListResourceSettings::route('/'),
             'edit' => Pages\EditResourceSetting::route('/{record}/edit'),
+            'studio' => Pages\NavigationStudio::route('/studio'),
         ];
     }
 }
