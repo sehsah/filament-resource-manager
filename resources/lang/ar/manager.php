@@ -23,7 +23,7 @@ return [
         'navigation' => 'التنقل',
         'placement' => 'الموضع',
         'badge' => 'الشارة',
-        'badge_hint' => 'شارة ثابتة تظهر بجوار العنصر في القائمة الجانبية. اترك النص فارغًا لإخفائها.',
+        'badge_hint' => 'اعرض نصًا ثابتًا أو عددًا مباشرًا من نموذج Eloquent بجوار عنصر التنقل.',
     ],
 
     'fields' => [
@@ -43,8 +43,40 @@ return [
         'is_visible' => 'ظاهر في التنقل',
         'is_visible_hint' => 'الإخفاء يزيله من القائمة الجانبية فقط، ولا يمنع الوصول إلى الرابط.',
         'badge' => 'نص الشارة',
+        'badge_type' => 'نوع الشارة',
+        'badge_static_hint' => 'اتركه فارغًا لإخفاء الشارة.',
+        'badge_model' => 'نموذج العد',
+        'badge_model_hint' => 'تعرض الشارة عدد السجلات المطابقة.',
+        'badge_conditions' => 'شروط العد',
+        'badge_conditions_hint' => 'يجب أن تتحقق جميع الشروط. بدون شروط سيتم عد جميع سجلات النموذج.',
+        'badge_condition_column' => 'العمود',
+        'badge_condition_operator' => 'الشرط',
+        'badge_condition_value' => 'القيمة',
+        'add_badge_condition' => 'إضافة شرط',
         'badge_color' => 'لون الشارة',
         'badge_tooltip' => 'تلميح الشارة',
+    ],
+
+    'badge_types' => [
+        'static' => 'نص ثابت',
+        'dynamic' => 'عدد مباشر من نموذج',
+        'dynamic_short' => 'عدد · :model',
+    ],
+
+    'badge_operators' => [
+        'equals' => 'يساوي',
+        'not_equals' => 'لا يساوي',
+        'greater_than' => 'أكبر من',
+        'greater_than_or_equal' => 'أكبر من أو يساوي',
+        'less_than' => 'أقل من',
+        'less_than_or_equal' => 'أقل من أو يساوي',
+        'contains' => 'يحتوي على',
+        'starts_with' => 'يبدأ بـ',
+        'ends_with' => 'ينتهي بـ',
+        'is_null' => 'فارغ',
+        'is_not_null' => 'غير فارغ',
+        'is_true' => 'صحيح',
+        'is_false' => 'خطأ',
     ],
 
     'actions' => [

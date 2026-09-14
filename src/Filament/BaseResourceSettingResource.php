@@ -2,6 +2,8 @@
 
 namespace MahmoudSehsah\FilamentResourceManager\Filament;
 
+use BladeUI\Icons\Factory;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -16,6 +18,7 @@ use MahmoudSehsah\FilamentResourceManager\FilamentResourceManagerPlugin;
 use MahmoudSehsah\FilamentResourceManager\Models\ResourceSetting;
 use MahmoudSehsah\FilamentResourceManager\Support\Compat;
 use MahmoudSehsah\FilamentResourceManager\Support\IconCatalog;
+use MahmoudSehsah\FilamentResourceManager\Support\ModelCatalog;
 use MahmoudSehsah\FilamentResourceManager\Support\ResourceDiscovery;
 
 /**
@@ -130,6 +133,11 @@ abstract class BaseResourceSettingResource extends Resource
 
                 TextColumn::make('badge')
                     ->label(__('filament-resource-manager::manager.columns.badge'))
+                    ->getStateUsing(fn ($record): ?string => ($record->badge_type ?? 'static') === 'dynamic'
+                        ? __('filament-resource-manager::manager.badge_types.dynamic_short', [
+                            'model' => class_basename($record->badge_model ?: ''),
+                        ])
+                        : $record->badge)
                     ->placeholder('—')
                     ->toggleable(isToggledHiddenByDefault: true),
 
@@ -241,10 +249,34 @@ abstract class BaseResourceSettingResource extends Resource
                 ->icon(static::safeIcon('heroicon-o-tag'))
                 ->columnSpanFull()
                 ->schema([
+                    Select::make('badge_type')
+                        ->label(__('filament-resource-manager::manager.fields.badge_type'))
+                        ->options([
+                            'static' => __('filament-resource-manager::manager.badge_types.static'),
+                            'dynamic' => __('filament-resource-manager::manager.badge_types.dynamic'),
+                        ])
+                        ->default('static')
+                        ->live()
+                        ->native(false)
+                        ->required(),
+
                     TextInput::make('badge')
                         ->label(__('filament-resource-manager::manager.fields.badge'))
+                        ->helperText(__('filament-resource-manager::manager.fields.badge_static_hint'))
                         ->prefixIcon(static::safeIcon('heroicon-o-tag'))
-                        ->maxLength(255),
+                        ->maxLength(255)
+                        ->visible(fn ($get): bool => ($get('badge_type') ?? 'static') === 'static'),
+
+                    Select::make('badge_model')
+                        ->label(__('filament-resource-manager::manager.fields.badge_model'))
+                        ->helperText(__('filament-resource-manager::manager.fields.badge_model_hint'))
+                        ->options(fn (): array => ModelCatalog::options())
+                        ->searchable()
+                        ->preload()
+                        ->live()
+                        ->native(false)
+                        ->required(fn ($get): bool => $get('badge_type') === 'dynamic')
+                        ->visible(fn ($get): bool => $get('badge_type') === 'dynamic'),
 
                     Select::make('badge_color')
                         ->label(__('filament-resource-manager::manager.fields.badge_color'))
@@ -256,6 +288,41 @@ abstract class BaseResourceSettingResource extends Resource
                         ->label(__('filament-resource-manager::manager.fields.badge_tooltip'))
                         ->prefixIcon(static::safeIcon('heroicon-o-chat-bubble-left-ellipsis'))
                         ->maxLength(255),
+
+                    Repeater::make('badge_conditions')
+                        ->label(__('filament-resource-manager::manager.fields.badge_conditions'))
+                        ->helperText(__('filament-resource-manager::manager.fields.badge_conditions_hint'))
+                        ->schema([
+                            Select::make('column')
+                                ->label(__('filament-resource-manager::manager.fields.badge_condition_column'))
+                                ->options(fn ($get): array => ModelCatalog::columns($get('../../badge_model')))
+                                ->searchable()
+                                ->native(false)
+                                ->required(),
+
+                            Select::make('operator')
+                                ->label(__('filament-resource-manager::manager.fields.badge_condition_operator'))
+                                ->options(static::badgeOperatorOptions())
+                                ->default('equals')
+                                ->live()
+                                ->native(false)
+                                ->required(),
+
+                            TextInput::make('value')
+                                ->label(__('filament-resource-manager::manager.fields.badge_condition_value'))
+                                ->visible(fn ($get): bool => ! in_array($get('operator'), [
+                                    'is_null',
+                                    'is_not_null',
+                                    'is_true',
+                                    'is_false',
+                                ], true)),
+                        ])
+                        ->columns(3)
+                        ->defaultItems(0)
+                        ->addActionLabel(__('filament-resource-manager::manager.fields.add_badge_condition'))
+                        ->collapsible()
+                        ->columnSpanFull()
+                        ->visible(fn ($get): bool => $get('badge_type') === 'dynamic'),
                 ])
                 ->columns(3),
         ];
@@ -338,6 +405,26 @@ abstract class BaseResourceSettingResource extends Resource
         return $options;
     }
 
+    /** @return array<string, string> */
+    public static function badgeOperatorOptions(): array
+    {
+        return [
+            'equals' => __('filament-resource-manager::manager.badge_operators.equals'),
+            'not_equals' => __('filament-resource-manager::manager.badge_operators.not_equals'),
+            'greater_than' => __('filament-resource-manager::manager.badge_operators.greater_than'),
+            'greater_than_or_equal' => __('filament-resource-manager::manager.badge_operators.greater_than_or_equal'),
+            'less_than' => __('filament-resource-manager::manager.badge_operators.less_than'),
+            'less_than_or_equal' => __('filament-resource-manager::manager.badge_operators.less_than_or_equal'),
+            'contains' => __('filament-resource-manager::manager.badge_operators.contains'),
+            'starts_with' => __('filament-resource-manager::manager.badge_operators.starts_with'),
+            'ends_with' => __('filament-resource-manager::manager.badge_operators.ends_with'),
+            'is_null' => __('filament-resource-manager::manager.badge_operators.is_null'),
+            'is_not_null' => __('filament-resource-manager::manager.badge_operators.is_not_null'),
+            'is_true' => __('filament-resource-manager::manager.badge_operators.is_true'),
+            'is_false' => __('filament-resource-manager::manager.badge_operators.is_false'),
+        ];
+    }
+
     /**
      * An icon name, but only if it actually resolves.
      *
@@ -360,12 +447,12 @@ abstract class BaseResourceSettingResource extends Resource
             return static::$resolvedIcons[$icon];
         }
 
-        if (! class_exists(\BladeUI\Icons\Factory::class)) {
+        if (! class_exists(Factory::class)) {
             return static::$resolvedIcons[$icon] = null;
         }
 
         try {
-            app(\BladeUI\Icons\Factory::class)->svg($icon);
+            app(Factory::class)->svg($icon);
 
             return static::$resolvedIcons[$icon] = $icon;
         } catch (\Throwable) {

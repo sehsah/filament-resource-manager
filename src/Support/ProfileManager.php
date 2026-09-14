@@ -26,6 +26,9 @@ class ProfileManager
         'parent_resource_class',
         'sort',
         'badge',
+        'badge_type',
+        'badge_model',
+        'badge_conditions',
         'badge_color',
         'badge_tooltip',
         'is_visible',
@@ -111,7 +114,7 @@ class ProfileManager
      * panel. Published navigation remains unchanged until an administrator
      * explicitly publishes the draft.
      *
-     * @param array<int, class-string> $resources
+     * @param  array<int, class-string>  $resources
      */
     public static function syncPanel(string $panelId, array $resources): void
     {
@@ -155,6 +158,9 @@ class ProfileManager
                         'parent_resource_class' => $row?->parent_resource_class,
                         'sort' => $row?->sort,
                         'badge' => $row?->badge,
+                        'badge_type' => $row?->badge_type ?? 'static',
+                        'badge_model' => $row?->badge_model,
+                        'badge_conditions' => $row?->badge_conditions,
                         'badge_color' => $row?->badge_color,
                         'badge_tooltip' => $row?->badge_tooltip,
                         'is_visible' => $row?->is_visible ?? true,
@@ -238,6 +244,64 @@ class ProfileManager
 
             $profile->forceFill(['status' => 'draft'])->save();
         });
+    }
+
+    /**
+     * Resource edit pages own badge configuration. Copy a saved badge into each
+     * profile draft, while leaving published snapshots unchanged until publish.
+     */
+    public static function syncBadgeSetting(Model $setting): void
+    {
+        try {
+            if (! static::tablesExist() || ! Schema::hasColumns(
+                $setting->getTable(),
+                ['badge_type', 'badge_model', 'badge_conditions'],
+            )) {
+                return;
+            }
+
+            $itemModel = static::itemModel();
+            $item = new $itemModel;
+
+            if (! Schema::hasColumns(
+                $item->getTable(),
+                ['badge_type', 'badge_model', 'badge_conditions'],
+            )) {
+                return;
+            }
+
+            $profileIds = [];
+            $values = [
+                'badge' => $setting->badge,
+                'badge_type' => $setting->badge_type ?: 'static',
+                'badge_model' => $setting->badge_model,
+                'badge_conditions' => $setting->badge_conditions,
+                'badge_color' => $setting->badge_color,
+                'badge_tooltip' => $setting->badge_tooltip,
+            ];
+
+            foreach ($itemModel::query()
+                ->where('resource_class', $setting->resource_class)
+                ->whereHas('profile', fn ($query) => $query->where('panel_id', $setting->panel_id))
+                ->get() as $profileItem) {
+                $profileItem->fill($values);
+
+                if (! $profileItem->isDirty()) {
+                    continue;
+                }
+
+                $profileItem->save();
+                $profileIds[] = $profileItem->profile_id;
+            }
+
+            if ($profileIds !== []) {
+                static::profileModel()::query()
+                    ->whereKey(array_values(array_unique($profileIds)))
+                    ->update(['status' => 'draft']);
+            }
+        } catch (Throwable) {
+            // A badge sync must never make saving the resource setting fail.
+        }
     }
 
     public static function publish(Model $profile, mixed $actor = null): Model
@@ -325,6 +389,9 @@ class ProfileManager
                     ?: $resourcesByLabel->get($row->navigation_parent_item),
                 'sort' => $row->sort,
                 'badge' => $row->badge,
+                'badge_type' => $row->badge_type ?? 'static',
+                'badge_model' => $row->badge_model,
+                'badge_conditions' => $row->badge_conditions,
                 'badge_color' => $row->badge_color,
                 'badge_tooltip' => $row->badge_tooltip,
                 'is_visible' => $row->is_visible,

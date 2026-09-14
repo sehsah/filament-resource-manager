@@ -4,6 +4,7 @@ namespace MahmoudSehsah\FilamentResourceManager\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use MahmoudSehsah\FilamentResourceManager\Support\OverrideRepository;
+use MahmoudSehsah\FilamentResourceManager\Support\ProfileManager;
 
 /**
  * @property int $id
@@ -18,6 +19,9 @@ use MahmoudSehsah\FilamentResourceManager\Support\OverrideRepository;
  * @property int|null $sort
  * @property bool $is_visible
  * @property string|null $badge
+ * @property string $badge_type
+ * @property string|null $badge_model
+ * @property array<int, array<string, mixed>>|null $badge_conditions
  * @property string|null $badge_color
  * @property string|null $badge_tooltip
  * @property string|null $default_label
@@ -33,6 +37,7 @@ class ResourceSetting extends Model
         'sort' => 'integer',
         'is_visible' => 'boolean',
         'is_orphaned' => 'boolean',
+        'badge_conditions' => 'array',
     ];
 
     /**
@@ -49,8 +54,9 @@ class ResourceSetting extends Model
      */
     protected static function booted(): void
     {
-        static::saved(static function (): void {
+        static::saved(static function (ResourceSetting $setting): void {
             OverrideRepository::flush();
+            ProfileManager::syncBadgeSetting($setting);
         });
 
         static::deleted(static function (): void {
@@ -93,6 +99,11 @@ class ResourceSetting extends Model
     {
         foreach (OverrideRepository::ATTRIBUTES as $attribute) {
             if ($attribute === 'is_visible') {
+                continue;
+            }
+
+            if (($this->badge_type ?? 'static') !== 'dynamic'
+                && in_array($attribute, ['badge_type', 'badge_model', 'badge_conditions'], true)) {
                 continue;
             }
 

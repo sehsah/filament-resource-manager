@@ -4,6 +4,7 @@ namespace MahmoudSehsah\FilamentResourceManager\Filament\Concerns;
 
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Model;
+use MahmoudSehsah\FilamentResourceManager\Support\DynamicBadgeResolver;
 use MahmoudSehsah\FilamentResourceManager\Support\ProfileManager;
 use MahmoudSehsah\FilamentResourceManager\Support\ResourceDiscovery;
 use MahmoudSehsah\FilamentResourceManager\Support\ResourceSynchroniser;
@@ -190,7 +191,12 @@ trait ManagesNavigationStudio
                 'parent_resource_class' => $item->parent_resource_class,
                 'sort' => $item->sort,
                 'is_visible' => (bool) $item->is_visible,
-                'badge' => $item->badge,
+                'badge' => DynamicBadgeResolver::resolve([
+                    'badge' => $item->badge,
+                    'badge_type' => $item->badge_type,
+                    'badge_model' => $item->badge_model,
+                    'badge_conditions' => $item->badge_conditions,
+                ]),
             ])
             ->values()
             ->all();

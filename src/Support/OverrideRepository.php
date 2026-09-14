@@ -32,6 +32,9 @@ class OverrideRepository
         'parent_resource_class',
         'sort',
         'badge',
+        'badge_type',
+        'badge_model',
+        'badge_conditions',
         'badge_color',
         'badge_tooltip',
         'is_visible',
@@ -235,8 +238,7 @@ class OverrideRepository
         ?string $panelId,
         int|string|null $profileId = null,
         int|string|null $versionId = null,
-    ): string
-    {
+    ): string {
         $base = (string) config('filament-resource-manager.cache.key', 'filament-resource-manager.overrides');
 
         $key = $base.'.'.($panelId ?? 'default');

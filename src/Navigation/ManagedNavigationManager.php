@@ -4,6 +4,7 @@ namespace MahmoudSehsah\FilamentResourceManager\Navigation;
 
 use Filament\Navigation\NavigationItem;
 use Filament\Navigation\NavigationManager;
+use MahmoudSehsah\FilamentResourceManager\Support\DynamicBadgeResolver;
 use MahmoudSehsah\FilamentResourceManager\Support\OverrideRepository;
 use MahmoudSehsah\FilamentResourceManager\Support\ResourceDiscovery;
 use Throwable;
@@ -132,8 +133,7 @@ class ManagedNavigationManager extends NavigationManager
         NavigationItem $item,
         array $override,
         array $labelsByResource = [],
-    ): void
-    {
+    ): void {
         if (($override['is_visible'] ?? true) === false) {
             $item->hidden();
 
@@ -170,8 +170,10 @@ class ManagedNavigationManager extends NavigationManager
             $item->sort((int) $override['sort']);
         }
 
-        if (filled($override['badge'] ?? null)) {
-            $item->badge($override['badge'], color: $override['badge_color'] ?? null);
+        $badge = DynamicBadgeResolver::resolve($override);
+
+        if ($badge !== null) {
+            $item->badge((string) $badge, color: $override['badge_color'] ?? null);
         }
 
         if (filled($override['badge_tooltip'] ?? null)) {

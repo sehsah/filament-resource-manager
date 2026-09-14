@@ -42,6 +42,9 @@ return new class extends Migration
                 $table->integer('sort')->nullable();
                 $table->boolean('is_visible')->default(true);
                 $table->string('badge')->nullable();
+                $table->string('badge_type')->default('static');
+                $table->string('badge_model')->nullable();
+                $table->json('badge_conditions')->nullable();
                 $table->string('badge_color')->nullable();
                 $table->string('badge_tooltip')->nullable();
                 $table->string('default_label')->nullable();

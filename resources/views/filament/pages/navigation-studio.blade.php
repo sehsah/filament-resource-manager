@@ -437,6 +437,9 @@
             background:
                 linear-gradient(135deg, rgba(var(--primary-500, 59, 130, 246), .07), transparent 38%),
                 rgb(var(--frm-surface));
+            background:
+                linear-gradient(135deg, color-mix(in srgb, var(--primary-500, rgb(59, 130, 246)) 7%, transparent), transparent 38%),
+                rgb(var(--frm-surface));
             padding: 1rem;
             box-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 8px 24px rgba(15, 23, 42, .035);
         }
@@ -444,6 +447,9 @@
         .dark .frm-commandbar {
             background:
                 linear-gradient(135deg, rgba(var(--primary-400, 96, 165, 250), .08), transparent 42%),
+                rgb(var(--frm-surface));
+            background:
+                linear-gradient(135deg, color-mix(in srgb, var(--primary-400, rgb(96, 165, 250)) 8%, transparent), transparent 42%),
                 rgb(var(--frm-surface));
             box-shadow: 0 10px 30px rgba(0, 0, 0, .16);
         }
@@ -476,15 +482,22 @@
             place-items: center;
             width: 2.6rem;
             height: 2.6rem;
-            border: 1px solid rgba(var(--primary-500, 59, 130, 246), .22);
+            border: 1px solid transparent;
+            border-color: rgba(var(--primary-500, 59, 130, 246), .22);
+            border-color: color-mix(in srgb, var(--primary-500, rgb(59, 130, 246)) 22%, transparent);
             border-radius: .75rem;
             background: rgba(var(--primary-500, 59, 130, 246), .1);
+            background: color-mix(in srgb, var(--primary-500, rgb(59, 130, 246)) 10%, transparent);
             color: rgb(var(--primary-600, 37, 99, 235));
+            color: var(--primary-600, rgb(37, 99, 235));
         }
 
         .dark .frm-command-icon,
         .dark .frm-preview-mark,
-        .dark .frm-version-icon { color: rgb(var(--primary-400, 96, 165, 250)); }
+        .dark .frm-version-icon {
+            color: rgb(var(--primary-400, 96, 165, 250));
+            color: var(--primary-400, rgb(96, 165, 250));
+        }
 
         .frm-command-icon svg,
         .frm-preview-mark svg { width: 1.25rem; height: 1.25rem; }
@@ -519,9 +532,11 @@
         .frm-input:hover { border-color: rgb(var(--frm-muted)); background: rgb(var(--frm-surface)); }
         .frm-input:focus {
             border-color: rgb(var(--primary-600, 37, 99, 235));
+            border-color: var(--primary-600, rgb(37, 99, 235));
             outline: none;
             background: rgb(var(--frm-surface));
             box-shadow: 0 0 0 3px rgba(var(--primary-500, 59, 130, 246), .16);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-500, rgb(59, 130, 246)) 16%, transparent);
         }
 
         .frm-button {
@@ -543,15 +558,25 @@
 
         .frm-button svg { width: 1rem; height: 1rem; }
         .frm-button:hover { transform: translateY(-1px); }
-        .frm-button:focus-visible { outline: 2px solid rgb(var(--primary-500, 59, 130, 246)); outline-offset: 2px; }
+        .frm-button:focus-visible {
+            outline: 2px solid transparent;
+            outline-color: rgb(var(--primary-500, 59, 130, 246));
+            outline-color: var(--primary-500, rgb(59, 130, 246));
+            outline-offset: 2px;
+        }
         .frm-button:disabled { cursor: wait; opacity: .55; transform: none; }
         .frm-button-primary {
             background: rgb(var(--primary-600, 37, 99, 235));
+            background: var(--primary-600, rgb(37, 99, 235));
             color: white;
             box-shadow: 0 1px 2px rgba(15, 23, 42, .12), 0 5px 14px rgba(var(--primary-600, 37, 99, 235), .2);
+            box-shadow: 0 1px 2px rgba(15, 23, 42, .12), 0 5px 14px color-mix(in srgb, var(--primary-600, rgb(37, 99, 235)) 20%, transparent);
         }
 
-        .frm-button-primary:hover { background: rgb(var(--primary-500, 59, 130, 246)); }
+        .frm-button-primary:hover {
+            background: rgb(var(--primary-500, 59, 130, 246));
+            background: var(--primary-500, rgb(59, 130, 246));
+        }
         .frm-button-secondary {
             border-color: rgb(var(--frm-border));
             background: rgb(var(--frm-surface-muted));
@@ -609,6 +634,7 @@
             height: .75rem;
             border: 2px solid rgb(var(--frm-border-strong));
             border-top-color: rgb(var(--primary-500, 59, 130, 246));
+            border-top-color: var(--primary-500, rgb(59, 130, 246));
             border-radius: 999px;
             animation: frm-spin .7s linear infinite;
         }
@@ -664,6 +690,7 @@
         .frm-tree-item:last-child { margin-bottom: 0; }
         .frm-tree-item:hover {
             border-color: rgba(var(--primary-500, 59, 130, 246), .5);
+            border-color: color-mix(in srgb, var(--primary-500, rgb(59, 130, 246)) 50%, transparent);
             box-shadow: 0 4px 14px rgba(15, 23, 42, .07);
         }
 
@@ -681,11 +708,16 @@
             height: 1.85rem;
             border-radius: .5rem;
             background: rgba(var(--primary-500, 59, 130, 246), .1);
+            background: color-mix(in srgb, var(--primary-500, rgb(59, 130, 246)) 10%, transparent);
             color: rgb(var(--primary-600, 37, 99, 235));
+            color: var(--primary-600, rgb(37, 99, 235));
         }
 
         .dark .frm-item-icon,
-        .dark .frm-preview-icon { color: rgb(var(--primary-400, 96, 165, 250)); }
+        .dark .frm-preview-icon {
+            color: rgb(var(--primary-400, 96, 165, 250));
+            color: var(--primary-400, rgb(96, 165, 250));
+        }
         .frm-item-icon svg,
         .frm-preview-icon svg { width: .95rem; height: .95rem; }
         .frm-item-label { flex: 1; min-width: 0; overflow: hidden; font-size: .87rem; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
@@ -715,8 +747,17 @@
             transition: background-color .15s ease, color .15s ease;
         }
 
-        .frm-eye:hover { background: rgb(var(--frm-surface-hover)); color: rgb(var(--primary-600, 37, 99, 235)); }
-        .frm-eye:focus-visible { outline: 2px solid rgb(var(--primary-500, 59, 130, 246)); outline-offset: 1px; }
+        .frm-eye:hover {
+            background: rgb(var(--frm-surface-hover));
+            color: rgb(var(--primary-600, 37, 99, 235));
+            color: var(--primary-600, rgb(37, 99, 235));
+        }
+        .frm-eye:focus-visible {
+            outline: 2px solid transparent;
+            outline-color: rgb(var(--primary-500, 59, 130, 246));
+            outline-color: var(--primary-500, rgb(59, 130, 246));
+            outline-offset: 1px;
+        }
         .frm-eye svg { width: 1.05rem; height: 1.05rem; }
 
         .frm-child-zone {
@@ -731,7 +772,9 @@
 
         .frm-child-zone:hover {
             border-color: rgb(var(--primary-400, 96, 165, 250));
+            border-color: var(--primary-400, rgb(96, 165, 250));
             background: rgba(var(--primary-500, 59, 130, 246), .05);
+            background: color-mix(in srgb, var(--primary-500, rgb(59, 130, 246)) 5%, transparent);
         }
 
         .frm-child-hint {
@@ -775,6 +818,9 @@
             border-radius: .9rem;
             background:
                 radial-gradient(circle at top right, rgba(var(--primary-500, 59, 130, 246), .1), transparent 38%),
+                rgb(var(--frm-surface-muted));
+            background:
+                radial-gradient(circle at top right, color-mix(in srgb, var(--primary-500, rgb(59, 130, 246)) 10%, transparent), transparent 38%),
                 rgb(var(--frm-surface-muted));
             box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 12px 28px rgba(15, 23, 42, .08);
             padding: .75rem;

@@ -23,7 +23,7 @@ return [
         'navigation' => 'Navigation',
         'placement' => 'Placement',
         'badge' => 'Badge',
-        'badge_hint' => 'A static badge shown next to the item in the sidebar. Leave the text empty for no badge.',
+        'badge_hint' => 'Show fixed text or a live count from an Eloquent model beside the navigation item.',
     ],
 
     'fields' => [
@@ -43,8 +43,40 @@ return [
         'is_visible' => 'Visible in navigation',
         'is_visible_hint' => 'Hiding only removes it from the sidebar. It does not block access to the URL.',
         'badge' => 'Badge text',
+        'badge_type' => 'Badge type',
+        'badge_static_hint' => 'Leave empty to hide the badge.',
+        'badge_model' => 'Count model',
+        'badge_model_hint' => 'The badge displays the number of matching records.',
+        'badge_conditions' => 'Count conditions',
+        'badge_conditions_hint' => 'All conditions must match. With no conditions, every model record is counted.',
+        'badge_condition_column' => 'Column',
+        'badge_condition_operator' => 'Condition',
+        'badge_condition_value' => 'Value',
+        'add_badge_condition' => 'Add condition',
         'badge_color' => 'Badge colour',
         'badge_tooltip' => 'Badge tooltip',
+    ],
+
+    'badge_types' => [
+        'static' => 'Static text',
+        'dynamic' => 'Dynamic model count',
+        'dynamic_short' => 'Count · :model',
+    ],
+
+    'badge_operators' => [
+        'equals' => 'Equals',
+        'not_equals' => 'Does not equal',
+        'greater_than' => 'Greater than',
+        'greater_than_or_equal' => 'Greater than or equal',
+        'less_than' => 'Less than',
+        'less_than_or_equal' => 'Less than or equal',
+        'contains' => 'Contains',
+        'starts_with' => 'Starts with',
+        'ends_with' => 'Ends with',
+        'is_null' => 'Is empty',
+        'is_not_null' => 'Is not empty',
+        'is_true' => 'Is true',
+        'is_false' => 'Is false',
     ],
 
     'actions' => [

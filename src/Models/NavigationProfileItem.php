@@ -14,12 +14,17 @@ class NavigationProfileItem extends Model
         'navigation_group_overridden' => 'boolean',
         'is_visible' => 'boolean',
         'is_orphaned' => 'boolean',
+        'badge_conditions' => 'array',
     ];
 
     protected static function booted(): void
     {
-        static::saved(static fn (): mixed => OverrideRepository::flush());
-        static::deleted(static fn (): mixed => OverrideRepository::flush());
+        static::saved(static function (): void {
+            OverrideRepository::flush();
+        });
+        static::deleted(static function (): void {
+            OverrideRepository::flush();
+        });
     }
 
     public function getTable(): string

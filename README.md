@@ -85,7 +85,9 @@ The edit page exposes every attribute the package can apply:
 | **Navigation group** | Moves the item into a group. Existing groups are suggested. |
 | **Parent item** | Nests the item under another navigation item, by its label. |
 | **Order** | Lower numbers first. Also set by dragging rows in the table. |
-| **Badge text / colour / tooltip** | A static badge beside the item. Blank text means no badge. |
+| **Badge type** | Choose static text or a live count from an Eloquent model. |
+| **Badge model and conditions** | Count every record or add multiple column/operator/value conditions. All conditions are combined with AND. |
+| **Badge colour / tooltip** | Style the static or dynamic badge and add optional explanatory text. |
 
 **Reset to defaults** on the edit page clears that one resource; **Reset all** on
 the table clears every resource. Both keep the ordering.
@@ -102,6 +104,22 @@ php artisan filament-resource-manager:sync --panel=admin
 
 Settings are stored per panel, so an `admin` panel and an `app` panel keep
 separate navigation configurations.
+
+Models used by resources on the current panel appear automatically in the
+dynamic badge picker. To expose a model that has no Filament resource, add it to
+the published config:
+
+```php
+'dynamic_badges' => [
+    'models' => [
+        App\Models\Ticket::class,
+        App\Models\Invoice::class => 'Invoices',
+    ],
+],
+```
+
+Dynamic badge changes are copied into profile drafts. Publish the profile from
+Navigation Studio when the new count is ready to become visible to users.
 
 > **Hiding is a navigation setting, not an access control.** A hidden resource's
 > URLs still work for anyone allowed to visit them. Use policies or

@@ -33,6 +33,7 @@ namespace Filament\Forms\Components {
     class TextInput extends Field {}
     class Toggle extends Field {}
     class Select extends Field {}
+    class Repeater extends Field {}
     class Section extends Component {}
 }
 namespace Filament\Forms { class Form { public function schema(array $s): static { return $this; } } }

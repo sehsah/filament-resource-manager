@@ -65,6 +65,8 @@ $classes = [
     "{$ns}Support\\ResourceSynchroniser",
     "{$ns}Support\\ProfileManager",
     "{$ns}Support\\ProfileResolver",
+    "{$ns}Support\\ModelCatalog",
+    "{$ns}Support\\DynamicBadgeResolver",
     "{$ns}Support\\OverrideRepository",
     "{$ns}Commands\\SyncResourcesCommand",
 ];

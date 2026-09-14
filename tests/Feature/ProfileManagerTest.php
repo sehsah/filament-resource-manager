@@ -18,9 +18,17 @@ class ProfileManagerTest extends TestCase
         $this->assertTrue(Schema::hasColumns('filament_resource_settings', [
             'parent_resource_class',
             'default_navigation_group',
+            'badge_type',
+            'badge_model',
+            'badge_conditions',
         ]));
         $this->assertTrue(Schema::hasTable('filament_navigation_profiles'));
         $this->assertTrue(Schema::hasTable('filament_navigation_profile_items'));
+        $this->assertTrue(Schema::hasColumns('filament_navigation_profile_items', [
+            'badge_type',
+            'badge_model',
+            'badge_conditions',
+        ]));
         $this->assertFalse(Schema::hasTable('filament_navigation_profile_assignments'));
         $this->assertTrue(Schema::hasTable('filament_navigation_profile_versions'));
     }
@@ -110,6 +118,32 @@ class ProfileManagerTest extends TestCase
         $this->assertSame($support->getKey(), ProfileResolver::resolve($panel)?->getKey());
         $this->assertFalse((bool) $default->fresh()->is_default);
         $this->assertTrue((bool) $support->fresh()->is_default);
+    }
+
+    public function test_editing_a_resource_badge_updates_profile_drafts(): void
+    {
+        $this->seedResources();
+        $profile = ProfileManager::ensureDefault('admin');
+        $setting = ResourceSetting::query()
+            ->where('resource_class', 'App\\Filament\\Resources\\UserResource')
+            ->firstOrFail();
+
+        $setting->forceFill([
+            'badge_type' => 'dynamic',
+            'badge_model' => 'App\\Models\\User',
+            'badge_conditions' => [
+                ['column' => 'active', 'operator' => 'is_true', 'value' => null],
+            ],
+        ])->save();
+
+        $item = $profile->items()
+            ->where('resource_class', $setting->resource_class)
+            ->firstOrFail();
+
+        $this->assertSame('dynamic', $item->badge_type);
+        $this->assertSame('App\\Models\\User', $item->badge_model);
+        $this->assertSame($setting->badge_conditions, $item->badge_conditions);
+        $this->assertSame('draft', $profile->fresh()->status);
     }
 
     public function test_navigation_studio_view_is_registered_against_real_filament(): void

@@ -1,5 +1,10 @@
 <?php
 
+use MahmoudSehsah\FilamentResourceManager\Models\NavigationProfile;
+use MahmoudSehsah\FilamentResourceManager\Models\NavigationProfileItem;
+use MahmoudSehsah\FilamentResourceManager\Models\NavigationProfileVersion;
+use MahmoudSehsah\FilamentResourceManager\Models\ResourceSetting;
+
 return [
 
     /*
@@ -20,7 +25,7 @@ return [
     |
     */
 
-    'model' => MahmoudSehsah\FilamentResourceManager\Models\ResourceSetting::class,
+    'model' => ResourceSetting::class,
 
     /*
     |--------------------------------------------------------------------------
@@ -36,9 +41,9 @@ return [
     'profiles' => [
         'enabled' => true,
         'models' => [
-            'profile' => MahmoudSehsah\FilamentResourceManager\Models\NavigationProfile::class,
-            'item' => MahmoudSehsah\FilamentResourceManager\Models\NavigationProfileItem::class,
-            'version' => MahmoudSehsah\FilamentResourceManager\Models\NavigationProfileVersion::class,
+            'profile' => NavigationProfile::class,
+            'item' => NavigationProfileItem::class,
+            'version' => NavigationProfileVersion::class,
         ],
         'tables' => [
             'profiles' => 'filament_navigation_profiles',
@@ -99,6 +104,26 @@ return [
         'sets' => [],
         'limit' => 50,
         'max' => 5000,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Dynamic navigation badges
+    |--------------------------------------------------------------------------
+    |
+    | Models used by resources on the current panel are available automatically.
+    | Add models without a Filament resource here. Use either a simple list or
+    | map a model class to the label shown in the picker.
+    |
+    | 'models' => [
+    |     App\Models\Ticket::class,
+    |     App\Models\Invoice::class => 'Invoices',
+    | ],
+    |
+    */
+
+    'dynamic_badges' => [
+        'models' => [],
     ],
 
     /*
