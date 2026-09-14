@@ -20,6 +20,7 @@ use MahmoudSehsah\FilamentResourceManager\Support\Compat;
 use MahmoudSehsah\FilamentResourceManager\Support\FilamentVersion;
 use MahmoudSehsah\FilamentResourceManager\Support\IconCatalog;
 use MahmoudSehsah\FilamentResourceManager\Support\ModelCatalog;
+use MahmoudSehsah\FilamentResourceManager\Support\ProfileManager;
 use MahmoudSehsah\FilamentResourceManager\Support\ResourceDiscovery;
 use MahmoudSehsah\FilamentResourceManager\Support\TableColumns;
 
@@ -106,6 +107,15 @@ abstract class BaseResourceSettingResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->header(function () {
+                $profile = ProfileManager::governingProfile(ResourceDiscovery::panelId());
+
+                return $profile === null
+                    ? null
+                    : view('filament-resource-manager::components.profile-draft-alert', [
+                        'profile' => $profile,
+                    ]);
+            })
             ->reorderable('sort')
             ->defaultSort('sort')
             ->paginated([25, 50, 100, 'all'])

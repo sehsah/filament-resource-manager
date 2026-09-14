@@ -102,6 +102,7 @@ return [
         'saved_to_draft_body' => 'Navigation is currently served by the published version of ":profile". Publish it again in Navigation Studio to apply this change.',
         'profile_governs' => 'A published profile is in control',
         'profile_governs_body' => 'Navigation is served by the published version of ":profile". Changes made here go into its draft and apply when you publish it in Navigation Studio.',
+        'dismiss' => 'Dismiss message',
     ],
 
     'studio' => [

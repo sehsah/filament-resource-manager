@@ -4,11 +4,32 @@ namespace MahmoudSehsah\FilamentResourceManager\Tests\Feature;
 
 use MahmoudSehsah\FilamentResourceManager\Filament\V4\Pages\NavigationStudio;
 use MahmoudSehsah\FilamentResourceManager\Filament\V4\ResourceSettingResource;
+use MahmoudSehsah\FilamentResourceManager\Models\NavigationProfile;
 use MahmoudSehsah\FilamentResourceManager\Support\FilamentVersion;
 use MahmoudSehsah\FilamentResourceManager\Tests\TestCase;
 
 class ManagerScreensTest extends TestCase
 {
+    public function test_governing_profile_notice_is_an_inline_dismissible_alert(): void
+    {
+        $profile = NavigationProfile::query()->create([
+            'panel_id' => 'admin',
+            'name' => 'Default',
+            'slug' => 'default',
+            'status' => 'published',
+            'is_default' => true,
+        ]);
+
+        $html = view('filament-resource-manager::components.profile-draft-alert', [
+            'profile' => $profile,
+        ])->render();
+
+        $this->assertStringContainsString('class="frm-profile-alert"', $html);
+        $this->assertStringContainsString('x-on:click="visible = false"', $html);
+        $this->assertStringContainsString('Dismiss message', $html);
+        $this->assertStringContainsString('Default', $html);
+    }
+
     /**
      * The studio pages used to call authorizeAccess(), which
      * Filament\Resources\Pages\Page does not declare on any major - so
