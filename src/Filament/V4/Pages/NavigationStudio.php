@@ -12,10 +12,6 @@ class NavigationStudio extends Page
 
     protected static string $resource = ResourceSettingResource::class;
 
-    public function mount(): void
-    {
-    }
-
     public function getView(): string
     {
         return 'filament-resource-manager::filament.pages.navigation-studio';

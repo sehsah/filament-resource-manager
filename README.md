@@ -83,6 +83,7 @@ The edit page exposes every attribute the package can apply:
 | **Active icon** | Shown while that item is the current page. Defaults to the icon above. |
 | **Visible in navigation** | Off hides the item from the sidebar. |
 | **Navigation group** | Moves the item into a group. Existing groups are suggested. |
+| **Override the group** | On with a group named above puts the item there; on with the field empty takes it out of every group. Off keeps whatever group the resource declares. |
 | **Parent item** | Nests the item under another navigation item, by its label. |
 | **Order** | Lower numbers first. Also set by dragging rows in the table. |
 | **Badge type** | Choose static text or a live count from an Eloquent model. |
@@ -94,6 +95,38 @@ the table clears every resource. Both keep the ordering.
 
 **Sync resources** picks up resources added since the last visit; it also runs
 automatically when the page opens (`auto_sync` in the config).
+
+### Navigation Studio
+
+**Navigation Studio**, from the button above the table, is the same settings
+seen as the sidebar: drag resources between groups, drop one onto another to
+nest it, toggle visibility, and watch a live preview beside it. Every drop saves
+a draft.
+
+A studio layout belongs to a **profile**. A profile keeps a mutable draft and a
+history of published versions:
+
+- **Publish** freezes the current draft as a new version and makes it the
+  panel's active navigation.
+- **Rollback** on any earlier version restores it into the draft and publishes
+  it again as a new version, so the history is only ever appended to.
+- **Clone** starts a second profile from the current one — an alternative layout
+  you can build up and publish when it is ready. Only the panel's default
+  profile is live; the others are drafts in waiting.
+
+The table and edit page, and the studio, are two views of the same navigation:
+
+- Saving the edit page writes into the default profile's draft as well, and the
+  page says so. Because a published version is immutable, the change reaches
+  the sidebar when you publish again.
+- Saving a layout in the studio writes the placement — group, nesting, order,
+  visibility — back to the settings table, so both screens keep showing the
+  same thing.
+- Other profiles are left alone; they are alternative layouts, not copies.
+
+Set `profiles.enabled` to `false` in the config to switch profiles off
+entirely. Nothing has been published until you open the studio and publish, so
+an install that never opens it behaves exactly as it did before.
 
 From the command line:
 
@@ -192,6 +225,8 @@ at runtime.
 See `config/filament-resource-manager.php`:
 
 - `table_name`, `model` — swap the table or extend the model
+- `profiles` — turn navigation profiles on or off, and swap their tables or
+  models
 - `auto_sync` — sync on page open
 - `cache` — overrides are cached and flushed on every write
 - `icons` — which icon sets the picker offers, how many results a search returns,
@@ -205,6 +240,7 @@ See `config/filament-resource-manager.php`:
 
 ```bash
 composer install
+vendor/bin/phpunit
 vendor/bin/pint --test
 ```
 
@@ -221,6 +257,10 @@ for v in 3 4 5; do FIL_MAJOR=$v php tests/Compatibility/run.php; done
 ```
 
 Re-run it whenever you add a method that overrides something Filament declares.
+
+Note that it only checks that classes load and that signatures line up — it
+never calls a page's `mount()`, so a call to a method Filament does not declare
+still needs the PHPUnit suite to catch it.
 
 ## License
 

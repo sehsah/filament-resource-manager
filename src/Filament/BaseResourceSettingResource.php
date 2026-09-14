@@ -17,9 +17,11 @@ use Illuminate\Database\Eloquent\Model;
 use MahmoudSehsah\FilamentResourceManager\FilamentResourceManagerPlugin;
 use MahmoudSehsah\FilamentResourceManager\Models\ResourceSetting;
 use MahmoudSehsah\FilamentResourceManager\Support\Compat;
+use MahmoudSehsah\FilamentResourceManager\Support\FilamentVersion;
 use MahmoudSehsah\FilamentResourceManager\Support\IconCatalog;
 use MahmoudSehsah\FilamentResourceManager\Support\ModelCatalog;
 use MahmoudSehsah\FilamentResourceManager\Support\ResourceDiscovery;
+use MahmoudSehsah\FilamentResourceManager\Support\TableColumns;
 
 /**
  * The administration screen for resource navigation settings.
@@ -122,7 +124,10 @@ abstract class BaseResourceSettingResource extends Resource
 
                 TextColumn::make('effective_navigation_group')
                     ->label(__('filament-resource-manager::manager.columns.group'))
-                    ->placeholder('—')
+                    ->placeholder(fn ($record): string => static::hasGroupOverrideColumn()
+                        && $record->navigation_group_overridden
+                        ? __('filament-resource-manager::manager.studio.ungrouped')
+                        : '—')
                     ->badge()
                     ->sortable(['navigation_group']),
 
@@ -224,7 +229,23 @@ abstract class BaseResourceSettingResource extends Resource
                         ->placeholder(fn ($record): ?string => $record?->default_navigation_group)
                         ->datalist(fn (): array => static::knownGroups())
                         ->prefixIcon(static::safeIcon('heroicon-o-folder'))
+                        ->live(onBlur: true)
+                        // Typing a group is itself an override; the toggle
+                        // below is only needed to override it to "no group".
+                        ->afterStateUpdated(function ($state, $set): void {
+                            if (filled($state) && static::hasGroupOverrideColumn()) {
+                                $set('navigation_group_overridden', true);
+                            }
+                        })
                         ->maxLength(255),
+
+                    Toggle::make('navigation_group_overridden')
+                        ->label(__('filament-resource-manager::manager.fields.group_overridden'))
+                        ->helperText(__('filament-resource-manager::manager.fields.group_overridden_hint'))
+                        // Saving a column the table does not have yet would be
+                        // an SQL error, so the field waits for its migration.
+                        ->visible(fn (): bool => static::hasGroupOverrideColumn())
+                        ->dehydrated(fn (): bool => static::hasGroupOverrideColumn()),
 
                     Select::make('parent_resource_class')
                         ->label(__('filament-resource-manager::manager.fields.parent_item'))
@@ -393,10 +414,19 @@ abstract class BaseResourceSettingResource extends Resource
 
         $options = [];
 
+        // v3 stores these custom properties as an "r, g, b" triplet, so the
+        // value has to be wrapped in rgb(); v4 and v5 store a complete
+        // oklch() colour, which must be used as-is. Wrapping an oklch() value
+        // in rgb() is invalid CSS and renders nothing at all, which is what
+        // this used to do on v4/v5.
+        $swatchColor = FilamentVersion::isSchemaBased()
+            ? fn (string $key): string => "var(--{$key}-500, var(--gray-500, #6b7280))"
+            : fn (string $key): string => "rgb(var(--{$key}-500, var(--gray-500, 107, 114, 128)))";
+
         foreach ($colors as $key => $label) {
             $swatch = 'display:inline-block;width:0.75rem;height:0.75rem;border-radius:9999px;'
                 .'margin-inline-end:0.5rem;vertical-align:middle;'
-                ."background-color:rgb(var(--{$key}-500, var(--gray-500)));";
+                .'background-color:'.$swatchColor($key).';';
 
             $options[$key] = '<span style="'.$swatch.'"></span><span style="vertical-align:middle;">'
                 .e($label).'</span>';
@@ -501,6 +531,14 @@ abstract class BaseResourceSettingResource extends Resource
         } catch (\Throwable) {
             return [];
         }
+    }
+
+    public static function hasGroupOverrideColumn(): bool
+    {
+        return TableColumns::has(
+            (new (static::getModel()))->getTable(),
+            ['navigation_group_overridden'],
+        );
     }
 
     protected static function configuredSlug(): string

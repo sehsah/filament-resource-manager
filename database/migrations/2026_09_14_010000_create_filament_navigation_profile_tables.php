@@ -15,9 +15,9 @@ return new class extends Migration
         if (! Schema::hasTable($profiles)) {
             Schema::create($profiles, function (Blueprint $table): void {
                 $table->id();
-                $table->string('panel_id')->index();
+                $table->string('panel_id', 191)->index();
                 $table->string('name');
-                $table->string('slug');
+                $table->string('slug', 191);
                 $table->string('status')->default('draft');
                 $table->boolean('is_default')->default(false);
                 $table->unsignedBigInteger('published_version_id')->nullable()->index();
@@ -32,7 +32,7 @@ return new class extends Migration
             Schema::create($items, function (Blueprint $table): void {
                 $table->id();
                 $table->unsignedBigInteger('profile_id')->index();
-                $table->string('resource_class');
+                $table->string('resource_class', 191);
                 $table->string('label')->nullable();
                 $table->string('icon')->nullable();
                 $table->string('active_icon')->nullable();

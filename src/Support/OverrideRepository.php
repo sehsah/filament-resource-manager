@@ -28,6 +28,7 @@ class OverrideRepository
         'icon',
         'active_icon',
         'navigation_group',
+        'navigation_group_overridden',
         'navigation_parent_item',
         'parent_resource_class',
         'sort',
@@ -93,6 +94,7 @@ class OverrideRepository
     public static function flush(): void
     {
         static::$memo = [];
+        TableColumns::flush();
 
         if (static::$flushSuspended) {
             return;
@@ -150,19 +152,24 @@ class OverrideRepository
             /** @var class-string<Model> $model */
             $model = config('filament-resource-manager.model', ResourceSetting::class);
 
+            $available = TableColumns::intersect((new $model)->getTable(), static::ATTRIBUTES);
+
             return $model::query()
                 ->where('panel_id', $panelId)
                 ->where('is_orphaned', false)
-                ->get(array_merge(['resource_class'], static::ATTRIBUTES))
+                ->get(array_merge(['resource_class'], $available))
                 ->keyBy('resource_class')
-                ->map(function ($row): array {
+                ->map(function ($row) use ($available): array {
                     $override = [];
 
                     foreach (static::ATTRIBUTES as $attribute) {
-                        $override[$attribute] = $row->{$attribute};
+                        $override[$attribute] = in_array($attribute, $available, true)
+                            ? $row->{$attribute}
+                            : null;
                     }
 
                     $override['is_visible'] = (bool) $override['is_visible'];
+                    $override['navigation_group_overridden'] = (bool) $override['navigation_group_overridden'];
 
                     return $override;
                 })
@@ -170,42 +177,6 @@ class OverrideRepository
         } catch (Throwable) {
             // Before the migration runs, or while the database is unreachable,
             // navigation should simply render untouched.
-            return [];
-        }
-    }
-
-    /** @return array<string, array<string, mixed>> */
-    protected static function queryProfile(Model $profile): array
-    {
-        try {
-            $version = $profile->publishedVersion()->first();
-
-            if (! $version instanceof Model) {
-                return [];
-            }
-
-            $overrides = [];
-
-            foreach ((array) $version->snapshot as $item) {
-                $resource = $item['resource_class'] ?? null;
-
-                if (! is_string($resource) || ($item['is_orphaned'] ?? false)) {
-                    continue;
-                }
-
-                $override = [];
-
-                foreach (static::ATTRIBUTES as $attribute) {
-                    $override[$attribute] = $item[$attribute] ?? null;
-                }
-
-                $override['navigation_group_overridden'] = (bool) ($item['navigation_group_overridden'] ?? false);
-                $override['is_visible'] = (bool) ($item['is_visible'] ?? true);
-                $overrides[$resource] = $override;
-            }
-
-            return $overrides;
-        } catch (Throwable) {
             return [];
         }
     }

@@ -20,13 +20,18 @@ return new class extends Migration
         Schema::create($this->tableName(), function (Blueprint $table): void {
             $table->id();
 
-            $table->string('panel_id')->nullable()->index();
-            $table->string('resource_class');
+            // Bounded because both columns sit in the unique index below:
+            // 255 + 255 under utf8mb4 needs a 2040-byte index, which is
+            // over the limit on MySQL/MariaDB configurations still using
+            // COMPACT row format or a 767-byte prefix.
+            $table->string('panel_id', 191)->nullable()->index();
+            $table->string('resource_class', 191);
 
             $table->string('label')->nullable();
             $table->string('icon')->nullable();
             $table->string('active_icon')->nullable();
             $table->string('navigation_group')->nullable();
+            $table->boolean('navigation_group_overridden')->default(false);
             $table->string('navigation_parent_item')->nullable();
             $table->string('parent_resource_class')->nullable();
             $table->integer('sort')->nullable();

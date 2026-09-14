@@ -154,7 +154,8 @@ class ProfileManager
                         'icon' => $row?->icon,
                         'active_icon' => $row?->active_icon,
                         'navigation_group' => $row?->navigation_group,
-                        'navigation_group_overridden' => filled($row?->navigation_group),
+                        'navigation_group_overridden' => (bool) ($row?->navigation_group_overridden)
+                            || filled($row?->navigation_group),
                         'parent_resource_class' => $row?->parent_resource_class,
                         'sort' => $row?->sort,
                         'badge' => $row?->badge,
@@ -193,7 +194,10 @@ class ProfileManager
     /** @param array<int, array<string, mixed>> $layout */
     public static function saveLayout(Model $profile, array $layout): void
     {
-        DB::transaction(function () use ($profile, $layout): void {
+        // Every item save clears the override cache through its model event.
+        // Suspending that turns a whole layout's worth of writes into the one
+        // flush at the end.
+        OverrideRepository::withoutFlushing(fn () => DB::transaction(function () use ($profile, $layout): void {
             $items = $profile->items()->where('is_orphaned', false)->get()->keyBy('resource_class');
             $allowed = $items->keys()->all();
             $parents = [];
@@ -243,46 +247,124 @@ class ProfileManager
             }
 
             $profile->forceFill(['status' => 'draft'])->save();
-        });
+
+            static::mirrorToSettings($profile);
+        }));
+
+        OverrideRepository::flush();
     }
 
     /**
-     * Resource edit pages own badge configuration. Copy a saved badge into each
-     * profile draft, while leaving published snapshots unchanged until publish.
+     * Copy the default profile's draft placement back into the resource
+     * settings table, so the edit page and the studio show the same thing.
+     *
+     * Written with query updates rather than model saves: the model's saved
+     * event would call syncSetting() and bounce the same values straight back
+     * into the items they came from.
      */
-    public static function syncBadgeSetting(Model $setting): void
+    protected static function mirrorToSettings(Model $profile): void
+    {
+        if (! (bool) $profile->is_default) {
+            return;
+        }
+
+        $settingModel = static::resourceSettingModel();
+        $settingTable = (new $settingModel)->getTable();
+
+        foreach ($profile->items()->where('is_orphaned', false)->get() as $item) {
+            $settingModel::query()
+                ->where('panel_id', $profile->panel_id)
+                ->where('resource_class', $item->resource_class)
+                ->update(TableColumns::only($settingTable, [
+                    'navigation_group' => $item->navigation_group,
+                    'navigation_group_overridden' => (bool) $item->navigation_group_overridden,
+                    'parent_resource_class' => $item->parent_resource_class,
+                    'sort' => $item->sort,
+                    'is_visible' => (bool) $item->is_visible,
+                ]));
+        }
+    }
+
+    /**
+     * The attributes an administrator can set on the resource edit page, and
+     * that therefore have to reach every profile draft. Keep in step with
+     * settingValues() below.
+     *
+     * @var array<int, string>
+     */
+    public const SYNCED_SETTING_ATTRIBUTES = [
+        'label',
+        'icon',
+        'active_icon',
+        'navigation_group',
+        'navigation_group_overridden',
+        'parent_resource_class',
+        'sort',
+        'is_visible',
+        'badge',
+        'badge_type',
+        'badge_model',
+        'badge_conditions',
+        'badge_color',
+        'badge_tooltip',
+    ];
+
+    /**
+     * The profile that currently governs a panel's navigation, if any.
+     *
+     * While one exists, the published snapshot is what renders, so edits made
+     * on the resource edit page land in the draft and only become visible when
+     * the profile is published again.
+     */
+    public static function governingProfile(?string $panelId = null): ?Model
+    {
+        $profile = ProfileResolver::resolve();
+
+        if ($profile === null) {
+            return null;
+        }
+
+        return ($panelId === null || $profile->panel_id === $panelId) ? $profile : null;
+    }
+
+    /**
+     * Mirror a saved resource setting into every profile draft on its panel.
+     *
+     * The resource edit page and the Navigation Studio write to two different
+     * tables, and the published profile snapshot is what actually renders once
+     * a profile has been published. Without this, saving the edit page would
+     * appear to do nothing. Published snapshots stay untouched - they are
+     * immutable by design - so the edit changes reach navigation on the next
+     * publish, and the pages say so.
+     *
+     * Only the panel's default profile - the one that governs navigation - is
+     * mirrored into. Other profiles are alternative layouts and keep their own
+     * arrangement until an administrator switches to them.
+     */
+    public static function syncSetting(Model $setting): void
     {
         try {
-            if (! static::tablesExist() || ! Schema::hasColumns(
-                $setting->getTable(),
-                ['badge_type', 'badge_model', 'badge_conditions'],
-            )) {
+            $badgeColumns = ['badge_type', 'badge_model', 'badge_conditions'];
+
+            if (! static::tablesExist() || ! TableColumns::has($setting->getTable(), $badgeColumns)) {
                 return;
             }
 
             $itemModel = static::itemModel();
-            $item = new $itemModel;
+            $itemTable = (new $itemModel)->getTable();
 
-            if (! Schema::hasColumns(
-                $item->getTable(),
-                ['badge_type', 'badge_model', 'badge_conditions'],
-            )) {
+            if (! TableColumns::has($itemTable, $badgeColumns)) {
                 return;
             }
 
             $profileIds = [];
-            $values = [
-                'badge' => $setting->badge,
-                'badge_type' => $setting->badge_type ?: 'static',
-                'badge_model' => $setting->badge_model,
-                'badge_conditions' => $setting->badge_conditions,
-                'badge_color' => $setting->badge_color,
-                'badge_tooltip' => $setting->badge_tooltip,
-            ];
+            $values = TableColumns::only($itemTable, static::settingValues($setting));
 
             foreach ($itemModel::query()
                 ->where('resource_class', $setting->resource_class)
-                ->whereHas('profile', fn ($query) => $query->where('panel_id', $setting->panel_id))
+                ->whereHas('profile', fn ($query) => $query
+                    ->where('panel_id', $setting->panel_id)
+                    ->where('is_default', true))
                 ->get() as $profileItem) {
                 $profileItem->fill($values);
 
@@ -300,8 +382,43 @@ class ProfileManager
                     ->update(['status' => 'draft']);
             }
         } catch (Throwable) {
-            // A badge sync must never make saving the resource setting fail.
+            // Mirroring must never make saving the resource setting fail.
         }
+    }
+
+    /**
+     * @deprecated Use syncSetting(), which mirrors every overridable attribute.
+     */
+    public static function syncBadgeSetting(Model $setting): void
+    {
+        static::syncSetting($setting);
+    }
+
+    /**
+     * The legacy table records "no group override" as a null group; profile
+     * items carry an explicit flag instead, so the two have to be translated.
+     *
+     * @return array<string, mixed>
+     */
+    protected static function settingValues(Model $setting): array
+    {
+        return [
+            'label' => $setting->label,
+            'icon' => $setting->icon,
+            'active_icon' => $setting->active_icon,
+            'navigation_group' => $setting->navigation_group,
+            'navigation_group_overridden' => (bool) $setting->navigation_group_overridden
+                || filled($setting->navigation_group),
+            'parent_resource_class' => $setting->parent_resource_class,
+            'sort' => $setting->sort,
+            'is_visible' => (bool) $setting->is_visible,
+            'badge' => $setting->badge,
+            'badge_type' => $setting->badge_type ?: 'static',
+            'badge_model' => $setting->badge_model,
+            'badge_conditions' => $setting->badge_conditions,
+            'badge_color' => $setting->badge_color,
+            'badge_tooltip' => $setting->badge_tooltip,
+        ];
     }
 
     public static function publish(Model $profile, mixed $actor = null): Model
@@ -349,6 +466,8 @@ class ProfileManager
                     array_flip(static::ITEM_ATTRIBUTES),
                 ));
             }
+
+            static::mirrorToSettings($profile);
         });
 
         return static::publish($profile->fresh(), $actor);
@@ -384,7 +503,8 @@ class ProfileManager
                 'icon' => $row->icon,
                 'active_icon' => $row->active_icon,
                 'navigation_group' => $row->navigation_group,
-                'navigation_group_overridden' => filled($row->navigation_group),
+                'navigation_group_overridden' => (bool) $row->navigation_group_overridden
+                    || filled($row->navigation_group),
                 'parent_resource_class' => $row->parent_resource_class
                     ?: $resourcesByLabel->get($row->navigation_parent_item),
                 'sort' => $row->sort,

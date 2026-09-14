@@ -85,6 +85,7 @@ class ResourceSynchroniser
                 || ($row->default_navigation_group === null && $row->navigation_group === $defaultGroup)
             )) {
                 $row->navigation_group = null;
+                $row->navigation_group_overridden = false;
             }
 
             $row->fill($defaults);

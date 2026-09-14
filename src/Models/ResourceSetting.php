@@ -14,6 +14,7 @@ use MahmoudSehsah\FilamentResourceManager\Support\ProfileManager;
  * @property string|null $icon
  * @property string|null $active_icon
  * @property string|null $navigation_group
+ * @property bool $navigation_group_overridden
  * @property string|null $navigation_parent_item
  * @property string|null $parent_resource_class
  * @property int|null $sort
@@ -36,6 +37,7 @@ class ResourceSetting extends Model
     protected $casts = [
         'sort' => 'integer',
         'is_visible' => 'boolean',
+        'navigation_group_overridden' => 'boolean',
         'is_orphaned' => 'boolean',
         'badge_conditions' => 'array',
     ];
@@ -56,7 +58,7 @@ class ResourceSetting extends Model
     {
         static::saved(static function (ResourceSetting $setting): void {
             OverrideRepository::flush();
-            ProfileManager::syncBadgeSetting($setting);
+            ProfileManager::syncSetting($setting);
         });
 
         static::deleted(static function (): void {
@@ -84,8 +86,16 @@ class ResourceSetting extends Model
         return filled($this->icon) ? $this->icon : $this->default_icon;
     }
 
+    /**
+     * Three states, same as a profile item: an explicit group, an explicit
+     * "no group at all", or fall through to whatever the resource declares.
+     */
     public function getEffectiveNavigationGroupAttribute(): ?string
     {
+        if ($this->navigation_group_overridden) {
+            return $this->navigation_group;
+        }
+
         return filled($this->navigation_group)
             ? $this->navigation_group
             : $this->default_navigation_group;
@@ -97,8 +107,12 @@ class ResourceSetting extends Model
      */
     public function isPassthrough(): bool
     {
+        if ($this->navigation_group_overridden) {
+            return false;
+        }
+
         foreach (OverrideRepository::ATTRIBUTES as $attribute) {
-            if ($attribute === 'is_visible') {
+            if (in_array($attribute, ['is_visible', 'navigation_group_overridden'], true)) {
                 continue;
             }
 

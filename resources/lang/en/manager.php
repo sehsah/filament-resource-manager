@@ -36,6 +36,8 @@ return [
         'active_icon_hint' => 'Shown while the item is the current page. Empty uses the icon above.',
         'group' => 'Navigation group',
         'group_hint' => 'Empty keeps the resource group.',
+        'group_overridden' => 'Override the group',
+        'group_overridden_hint' => 'On with a group above puts the item in that group; on with the field empty removes it from every group. Off keeps the resource\'s own group.',
         'parent_item' => 'Parent item',
         'parent_item_hint' => 'Nest under another resource. The relationship follows its class even when labels change.',
         'sort' => 'Order',
@@ -96,6 +98,10 @@ return [
         'draft_saved' => 'Draft layout saved',
         'profile_published' => 'Profile published as version :version',
         'profile_rolled_back' => 'Rollback published as version :version',
+        'saved_to_draft' => 'Saved to the profile draft',
+        'saved_to_draft_body' => 'Navigation is currently served by the published version of ":profile". Publish it again in Navigation Studio to apply this change.',
+        'profile_governs' => 'A published profile is in control',
+        'profile_governs_body' => 'Navigation is served by the published version of ":profile". Changes made here go into its draft and apply when you publish it in Navigation Studio.',
     ],
 
     'studio' => [

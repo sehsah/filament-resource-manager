@@ -5,7 +5,9 @@ namespace MahmoudSehsah\FilamentResourceManager\Filament\Concerns;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use MahmoudSehsah\FilamentResourceManager\Support\OverrideRepository;
+use MahmoudSehsah\FilamentResourceManager\Support\ProfileManager;
 use MahmoudSehsah\FilamentResourceManager\Support\ResourceDiscovery;
+use MahmoudSehsah\FilamentResourceManager\Support\TableColumns;
 use MahmoudSehsah\FilamentResourceManager\Support\ResourceSynchroniser;
 
 /**
@@ -21,6 +23,29 @@ trait ListsResourceSettings
         if (config('filament-resource-manager.auto_sync', true)) {
             ResourceSynchroniser::sync(ResourceDiscovery::panel());
         }
+
+        $this->warnAboutGoverningProfile();
+    }
+
+    /**
+     * Edits made here go into the governing profile's draft while one is
+     * published, so the sidebar only changes on the next publish.
+     */
+    protected function warnAboutGoverningProfile(): void
+    {
+        $profile = ProfileManager::governingProfile(ResourceDiscovery::panelId());
+
+        if ($profile === null) {
+            return;
+        }
+
+        Notification::make()
+            ->warning()
+            ->title(__('filament-resource-manager::manager.notifications.profile_governs'))
+            ->body(__('filament-resource-manager::manager.notifications.profile_governs_body', [
+                'profile' => $profile->name,
+            ]))
+            ->send();
     }
 
     /**
@@ -56,21 +81,26 @@ trait ListsResourceSettings
                 ->requiresConfirmation()
                 ->modalDescription(__('filament-resource-manager::manager.actions.reset_confirm'))
                 ->action(function (): void {
-                    static::getResource()::getEloquentQuery()->update([
-                        'label' => null,
-                        'icon' => null,
-                        'active_icon' => null,
-                        'navigation_group' => null,
-                        'navigation_parent_item' => null,
-                        'parent_resource_class' => null,
-                        'badge' => null,
-                        'badge_type' => 'static',
-                        'badge_model' => null,
-                        'badge_conditions' => null,
-                        'badge_color' => null,
-                        'badge_tooltip' => null,
-                        'is_visible' => true,
-                    ]);
+                    $model = static::getResource()::getModel();
+
+                    static::getResource()::getEloquentQuery()->update(
+                        TableColumns::only((new $model)->getTable(), [
+                            'label' => null,
+                            'icon' => null,
+                            'active_icon' => null,
+                            'navigation_group' => null,
+                            'navigation_group_overridden' => false,
+                            'navigation_parent_item' => null,
+                            'parent_resource_class' => null,
+                            'badge' => null,
+                            'badge_type' => 'static',
+                            'badge_model' => null,
+                            'badge_conditions' => null,
+                            'badge_color' => null,
+                            'badge_tooltip' => null,
+                            'is_visible' => true,
+                        ]),
+                    );
 
                     OverrideRepository::flush();
 
