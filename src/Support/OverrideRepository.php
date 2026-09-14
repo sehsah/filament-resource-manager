@@ -168,15 +168,67 @@ class OverrideRepository
                             : null;
                     }
 
-                    $override['is_visible'] = (bool) $override['is_visible'];
+                    // A column the table does not have reads as null above.
+                    // For is_visible that has to mean "visible", or a missing
+                    // column would empty the whole sidebar.
+                    $override['is_visible'] = $override['is_visible'] === null
+                        || (bool) $override['is_visible'];
                     $override['navigation_group_overridden'] = (bool) $override['navigation_group_overridden'];
 
                     return $override;
                 })
                 ->all();
-        } catch (Throwable) {
+        } catch (Throwable $exception) {
             // Before the migration runs, or while the database is unreachable,
             // navigation should simply render untouched.
+            static::report($exception);
+
+            return [];
+        }
+    }
+
+    /**
+     * The overrides a published profile carries.
+     *
+     * Read from the version's snapshot rather than from the draft items: a
+     * published version is immutable, so what renders cannot drift while an
+     * administrator is still rearranging the draft.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    protected static function queryProfile(Model $profile): array
+    {
+        try {
+            $version = $profile->publishedVersion()->first();
+
+            if (! $version instanceof Model) {
+                return [];
+            }
+
+            $overrides = [];
+
+            foreach ((array) $version->snapshot as $item) {
+                $resource = $item['resource_class'] ?? null;
+
+                if (! is_string($resource) || ($item['is_orphaned'] ?? false)) {
+                    continue;
+                }
+
+                $override = [];
+
+                foreach (static::ATTRIBUTES as $attribute) {
+                    $override[$attribute] = $item[$attribute] ?? null;
+                }
+
+                $override['navigation_group_overridden'] = (bool) ($item['navigation_group_overridden'] ?? false);
+                $override['is_visible'] = (bool) ($item['is_visible'] ?? true);
+                $overrides[$resource] = $override;
+            }
+
+            return $overrides;
+        } catch (Throwable $exception) {
+            static::report($exception);
+
             return [];
         }
     }
@@ -217,6 +269,22 @@ class OverrideRepository
         return $profileId === null
             ? $key
             : $key.'.profile.'.$profileId.'.version.'.($versionId ?? 'none');
+    }
+
+    /**
+     * Swallowing a throwable keeps navigation rendering, but it also hides a
+     * mistake in this class - a missing method looks exactly like a missing
+     * table. Log it so the next one is visible.
+     */
+    protected static function report(Throwable $exception): void
+    {
+        try {
+            if (function_exists('report')) {
+                report($exception);
+            }
+        } catch (Throwable) {
+            // A logger that is itself broken must not break navigation either.
+        }
     }
 
     protected static function cache(): CacheRepository

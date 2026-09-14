@@ -7,8 +7,8 @@ use Filament\Notifications\Notification;
 use MahmoudSehsah\FilamentResourceManager\Support\OverrideRepository;
 use MahmoudSehsah\FilamentResourceManager\Support\ProfileManager;
 use MahmoudSehsah\FilamentResourceManager\Support\ResourceDiscovery;
-use MahmoudSehsah\FilamentResourceManager\Support\TableColumns;
 use MahmoudSehsah\FilamentResourceManager\Support\ResourceSynchroniser;
+use MahmoudSehsah\FilamentResourceManager\Support\TableColumns;
 
 /**
  * Shared body for the manager's list page. Filament\Actions\Action and

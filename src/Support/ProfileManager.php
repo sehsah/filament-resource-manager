@@ -286,30 +286,6 @@ class ProfileManager
     }
 
     /**
-     * The attributes an administrator can set on the resource edit page, and
-     * that therefore have to reach every profile draft. Keep in step with
-     * settingValues() below.
-     *
-     * @var array<int, string>
-     */
-    public const SYNCED_SETTING_ATTRIBUTES = [
-        'label',
-        'icon',
-        'active_icon',
-        'navigation_group',
-        'navigation_group_overridden',
-        'parent_resource_class',
-        'sort',
-        'is_visible',
-        'badge',
-        'badge_type',
-        'badge_model',
-        'badge_conditions',
-        'badge_color',
-        'badge_tooltip',
-    ];
-
-    /**
      * The profile that currently governs a panel's navigation, if any.
      *
      * While one exists, the published snapshot is what renders, so edits made
@@ -328,7 +304,7 @@ class ProfileManager
     }
 
     /**
-     * Mirror a saved resource setting into every profile draft on its panel.
+     * Mirror a saved resource setting into the panel's default profile draft.
      *
      * The resource edit page and the Navigation Studio write to two different
      * tables, and the published profile snapshot is what actually renders once

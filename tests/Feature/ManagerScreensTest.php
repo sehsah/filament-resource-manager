@@ -28,7 +28,11 @@ class ManagerScreensTest extends TestCase
             );
 
             $this->assertIsString($source);
-            $this->assertStringNotContainsString('authorizeAccess', $source);
+
+            // The docblocks name the method as history; what must not come
+            // back is a call to it.
+            $this->assertStringNotContainsString('->authorizeAccess(', $source);
+            $this->assertStringNotContainsString('static::authorizeAccess(', $source);
         }
 
         $this->assertFalse(method_exists(NavigationStudio::class, 'authorizeAccess'));
