@@ -17,8 +17,14 @@
                             <rect x="14" y="14" width="7" height="7" rx="2" />
                         </svg>
                     </div>
-                    <label class="frm-field">
-                        <span>{{ __('filament-resource-manager::manager.studio.profile') }}</span>
+                    <label class="frm-field frm-profile-field">
+                        <span class="frm-field-label-row">
+                            <span>{{ __('filament-resource-manager::manager.studio.profile') }}</span>
+                            <span class="frm-status frm-status-{{ $profile->status }}">
+                                <span class="frm-status-dot" aria-hidden="true"></span>
+                                {{ ucfirst($profile->status) }}
+                            </span>
+                        </span>
                         <select wire:model.live="profileId" class="frm-input frm-profile-select">
                             @foreach ($profiles as $availableProfile)
                                 <option value="{{ $availableProfile->getKey() }}">
@@ -27,10 +33,6 @@
                             @endforeach
                         </select>
                     </label>
-                    <span class="frm-status frm-status-{{ $profile->status }}">
-                        <span class="frm-status-dot" aria-hidden="true"></span>
-                        {{ ucfirst($profile->status) }}
-                    </span>
                 </div>
 
                 <form wire:submit="createProfile" class="frm-create-profile">
@@ -513,6 +515,20 @@
             letter-spacing: .025em;
         }
 
+        .frm-profile-field { min-width: 10rem; }
+        .frm-field-label-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: .75rem;
+        }
+
+        .frm-field-label-row .frm-status {
+            padding: .2rem .48rem;
+            font-size: .64rem;
+            letter-spacing: 0;
+        }
+
         .frm-input {
             width: 100%;
             min-width: 0;
@@ -920,9 +936,8 @@
 
         @media (max-width: 600px) {
             .frm-commandbar { grid-template-columns: 1fr; padding: .85rem; }
-            .frm-profile-picker { flex-wrap: wrap; min-width: 0; }
+            .frm-profile-picker { min-width: 0; }
             .frm-profile-picker .frm-field { flex: 1; }
-            .frm-profile-picker .frm-status { align-self: center; }
             .frm-create-profile { grid-column: 1; grid-row: auto; flex-direction: column; align-items: stretch; }
             .frm-publish { grid-column: 1; grid-row: auto; justify-self: stretch; }
             .frm-publish .frm-button { width: 100%; }

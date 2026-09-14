@@ -2,7 +2,6 @@
 
 namespace MahmoudSehsah\FilamentResourceManager\Tests\Feature;
 
-use Illuminate\Support\Facades\DB;
 use MahmoudSehsah\FilamentResourceManager\Filament\V4\Pages\NavigationStudio;
 use MahmoudSehsah\FilamentResourceManager\Filament\V4\ResourceSettingResource;
 use MahmoudSehsah\FilamentResourceManager\Support\FilamentVersion;
@@ -63,28 +62,28 @@ class ManagerScreensTest extends TestCase
      * Two 255-character columns in one unique index need 2040 bytes under
      * utf8mb4, over the limit on MySQL and MariaDB configurations still using
      * a 767-byte index prefix. 191 is the conventional ceiling.
+     *
+     * Asserted against the migrations rather than the created schema: the test
+     * suite runs on SQLite, which accepts a length and then ignores it.
      */
-    public function test_columns_in_unique_indexes_stay_inside_the_utf8mb4_key_limit(): void
+    public function test_columns_in_unique_indexes_declare_a_bounded_length(): void
     {
-        $this->assertSame('sqlite', DB::connection()->getDriverName());
+        $settings = '2026_09_13_152922_create_filament_resource_settings_table.php';
+        $profiles = '2026_09_14_010000_create_filament_navigation_profile_tables.php';
 
         foreach ([
-            'filament_resource_settings' => ['panel_id', 'resource_class'],
-            'filament_navigation_profiles' => ['panel_id', 'slug'],
-            'filament_navigation_profile_items' => ['resource_class'],
-        ] as $table => $columns) {
-            $sql = DB::table('sqlite_master')
-                ->where('type', 'table')
-                ->where('name', $table)
-                ->value('sql');
+            $settings => ['panel_id', 'resource_class'],
+            $profiles => ['panel_id', 'slug', 'resource_class'],
+        ] as $migration => $columns) {
+            $source = file_get_contents(__DIR__.'/../../database/migrations/'.$migration);
 
-            $this->assertIsString($sql, "{$table} was not created");
+            $this->assertIsString($source);
 
             foreach ($columns as $column) {
-                $this->assertMatchesRegularExpression(
-                    '/"'.preg_quote($column, '/').'" varchar\(191\)/',
-                    $sql,
-                    "{$table}.{$column} should be bounded at 191 characters",
+                $this->assertStringContainsString(
+                    "string('{$column}', 191)",
+                    $source,
+                    "{$column} sits in a unique index and should be bounded at 191 characters",
                 );
             }
         }
