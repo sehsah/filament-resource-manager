@@ -120,6 +120,25 @@ class ProfileManagerTest extends TestCase
         $this->assertTrue((bool) $support->fresh()->is_default);
     }
 
+    public function test_old_versions_can_be_deleted_but_the_current_version_is_protected(): void
+    {
+        $this->seedResources();
+        $profile = ProfileManager::ensureDefault('admin');
+        $versionOne = ProfileManager::publish($profile);
+        $versionTwo = ProfileManager::publish($profile->fresh());
+
+        $this->assertFalse(ProfileManager::deleteVersion($profile, $versionTwo->getKey()));
+        $this->assertTrue(ProfileManager::deleteVersion($profile, $versionOne->getKey()));
+        $this->assertDatabaseMissing('filament_navigation_profile_versions', ['id' => $versionOne->getKey()]);
+        $this->assertDatabaseHas('filament_navigation_profile_versions', ['id' => $versionTwo->getKey()]);
+
+        $versionThree = ProfileManager::publish($profile->fresh());
+
+        $this->assertSame(1, ProfileManager::deleteOldVersions($profile));
+        $this->assertDatabaseMissing('filament_navigation_profile_versions', ['id' => $versionTwo->getKey()]);
+        $this->assertDatabaseHas('filament_navigation_profile_versions', ['id' => $versionThree->getKey()]);
+    }
+
     public function test_editing_a_resource_badge_updates_profile_drafts(): void
     {
         $this->seedResources();

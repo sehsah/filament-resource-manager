@@ -115,17 +115,58 @@ trait ManagesNavigationStudio
         }
     }
 
+    public function deleteVersion(int $versionId): void
+    {
+        $profile = $this->profile();
+
+        if (! $profile instanceof Model) {
+            return;
+        }
+
+        try {
+            if (! ProfileManager::deleteVersion($profile, $versionId)) {
+                $this->notifyError(__('filament-resource-manager::manager.studio.current_version_protected'));
+
+                return;
+            }
+
+            $this->notifySuccess(__('filament-resource-manager::manager.notifications.version_deleted'));
+        } catch (Throwable $exception) {
+            $this->notifyError($exception->getMessage());
+        }
+    }
+
+    public function deleteOldVersions(): void
+    {
+        $profile = $this->profile();
+
+        if (! $profile instanceof Model) {
+            return;
+        }
+
+        try {
+            $count = ProfileManager::deleteOldVersions($profile);
+            $this->notifySuccess(__('filament-resource-manager::manager.notifications.old_versions_deleted', [
+                'count' => $count,
+            ]));
+        } catch (Throwable $exception) {
+            $this->notifyError($exception->getMessage());
+        }
+    }
+
     protected function getViewData(): array
     {
         $panelId = ResourceDiscovery::panelId();
         $profile = $this->profile();
         $profiles = collect();
         $versions = collect();
+        $versionCount = 0;
 
         if ($panelId !== null) {
             try {
                 $model = ProfileManager::profileModel();
                 $profiles = $model::query()->where('panel_id', $panelId)->orderByDesc('is_default')->orderBy('name')->get();
+                $versionCount = $profile?->versions()->count() ?? 0;
                 $versions = $profile?->versions()->latest('version')->limit(20)->get() ?? collect();
             } catch (Throwable) {
                 // The view shows its migration hint when profiles are unavailable.
@@ -146,7 +187,7 @@ trait ManagesNavigationStudio
             ->values()
             ->all();
 
-        return compact('profile', 'profiles', 'versions', 'groups');
+        return compact('profile', 'profiles', 'versions', 'versionCount', 'groups');
     }
 
     protected function profile(): ?Model

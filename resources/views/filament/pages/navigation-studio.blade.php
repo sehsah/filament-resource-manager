@@ -354,22 +354,41 @@
                     <x-slot name="heading">{{ __('filament-resource-manager::manager.studio.history') }}</x-slot>
                     <x-slot name="description">{{ __('filament-resource-manager::manager.studio.history_hint') }}</x-slot>
 
-                    <div class="frm-list">
+                    @if ($versions->isNotEmpty())
+                        <div class="frm-history-toolbar">
+                            <span>{{ __('filament-resource-manager::manager.studio.versions_saved', ['count' => $versionCount]) }}</span>
+
+                            @if ($versionCount > 1)
+                                <button wire:click="deleteOldVersions"
+                                    wire:confirm="{{ __('filament-resource-manager::manager.studio.delete_old_versions_confirm') }}"
+                                    wire:loading.attr="disabled"
+                                    class="frm-button frm-button-danger-quiet">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                        <path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13M10 11v5m4-5v5" />
+                                    </svg>
+                                    {{ __('filament-resource-manager::manager.studio.delete_old_versions') }}
+                                </button>
+                            @endif
+                        </div>
+                    @endif
+
+                    <div class="frm-history-list">
                         @forelse ($versions as $version)
-                            <div class="frm-list-row">
-                                <div class="frm-version-info">
-                                    <span class="frm-version-icon" aria-hidden="true">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                                            <path d="M12 8v4l2.5 2.5" />
-                                            <circle cx="12" cy="12" r="8.5" />
-                                        </svg>
-                                    </span>
-                                    <div>
-                                        <strong>v{{ $version->version }}</strong>
-                                        <small>{{ $version->published_at?->format('Y-m-d H:i') }}</small>
-                                    </div>
+                            @php($isCurrent = $profile->published_version_id === $version->getKey())
+                            <div class="frm-history-row {{ $isCurrent ? 'frm-history-row-current' : '' }}">
+                                <span class="frm-history-marker" aria-hidden="true">
+                                    <span></span>
+                                </span>
+
+                                <div class="frm-history-info">
+                                    <strong>v{{ $version->version }}</strong>
+                                    <time datetime="{{ $version->published_at?->toIso8601String() }}">
+                                        {{ $version->published_at?->format('Y-m-d H:i') }}
+                                    </time>
                                 </div>
-                                @if ($profile->published_version_id === $version->getKey())
+
+                                <div class="frm-history-actions">
+                                @if ($isCurrent)
                                     <span class="frm-status frm-status-published">
                                         <span class="frm-status-dot" aria-hidden="true"></span>
                                         {{ __('filament-resource-manager::manager.studio.current') }}
@@ -383,7 +402,18 @@
                                         </svg>
                                         {{ __('filament-resource-manager::manager.studio.rollback') }}
                                     </button>
+
+                                    <button wire:click="deleteVersion({{ $version->getKey() }})"
+                                        wire:confirm="{{ __('filament-resource-manager::manager.studio.delete_version_confirm') }}"
+                                        wire:loading.attr="disabled"
+                                        class="frm-button frm-button-delete">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                            <path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13M10 11v5m4-5v5" />
+                                        </svg>
+                                        {{ __('filament-resource-manager::manager.studio.delete_version') }}
+                                    </button>
                                 @endif
+                                </div>
                             </div>
                         @empty
                             <div class="frm-empty-group">{{ __('filament-resource-manager::manager.studio.no_versions') }}</div>
@@ -896,31 +926,74 @@
         .frm-preview-child { min-height: 2.25rem; padding-inline-start: 2.8rem; color: rgb(var(--frm-muted)); }
 
         .frm-lower-grid { min-width: 0; }
-        .frm-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
-            gap: .65rem;
-        }
-
-        .frm-list-row {
+        .frm-history-toolbar {
+            display: flex;
             align-items: center;
             justify-content: space-between;
-            min-height: 4.25rem;
-            border: 1px solid rgb(var(--frm-border));
-            border-radius: .75rem;
-            background: rgb(var(--frm-surface-muted));
-            padding: .65rem .75rem;
-            color: rgb(var(--frm-text-soft));
-            font-size: .82rem;
-            transition: border-color .15s ease, background-color .15s ease;
+            gap: 1rem;
+            border-bottom: 1px solid rgb(var(--frm-border));
+            padding-bottom: .75rem;
+            color: rgb(var(--frm-muted));
+            font-size: .75rem;
+            font-weight: 600;
         }
 
-        .frm-list-row:hover { border-color: rgb(var(--frm-border-strong)); background: rgb(var(--frm-surface)); }
-        .frm-version-info { min-width: 0; }
-        .frm-version-icon { width: 2.2rem; height: 2.2rem; border-color: rgb(var(--frm-border)); background: rgb(var(--frm-surface)); color: rgb(var(--frm-muted)); }
-        .frm-version-icon svg { width: 1rem; height: 1rem; }
-        .frm-list-row strong { color: rgb(var(--frm-text)); }
-        .frm-list-row small { display: block; margin-top: .15rem; color: rgb(var(--frm-muted)); }
+        .frm-button-danger-quiet,
+        .frm-button-delete {
+            border-color: transparent;
+            background: transparent;
+            color: rgb(185, 28, 28);
+            box-shadow: none;
+        }
+
+        .dark .frm-button-danger-quiet,
+        .dark .frm-button-delete { color: rgb(252, 165, 165); }
+        .frm-button-danger-quiet:hover,
+        .frm-button-delete:hover { background: rgba(239, 68, 68, .09); }
+
+        .frm-history-list { position: relative; }
+        .frm-history-row {
+            display: grid;
+            grid-template-columns: 1.8rem minmax(0, 1fr) auto;
+            align-items: center;
+            gap: .8rem;
+            min-height: 3.65rem;
+            border-bottom: 1px solid rgb(var(--frm-border));
+            padding: .55rem .2rem;
+            transition: background-color .15s ease;
+        }
+
+        .frm-history-row:last-child { border-bottom: 0; }
+        .frm-history-row:hover { background: rgba(var(--frm-surface-hover), .55); }
+        .frm-history-marker {
+            display: grid;
+            place-items: center;
+            width: 1.8rem;
+            height: 1.8rem;
+        }
+
+        .frm-history-marker span {
+            width: .55rem;
+            height: .55rem;
+            border: 2px solid rgb(var(--frm-muted));
+            border-radius: 999px;
+            background: rgb(var(--frm-surface));
+        }
+
+        .frm-history-row-current .frm-history-marker span {
+            border-color: rgb(var(--primary-600, 37, 99, 235));
+            border-color: var(--primary-600, rgb(37, 99, 235));
+            background: rgb(var(--primary-600, 37, 99, 235));
+            background: var(--primary-600, rgb(37, 99, 235));
+            box-shadow: 0 0 0 4px rgba(var(--primary-500, 59, 130, 246), .12);
+            box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary-500, rgb(59, 130, 246)) 12%, transparent);
+        }
+
+        .frm-history-info { min-width: 0; }
+        .frm-history-info strong { display: block; color: rgb(var(--frm-text)); font-size: .84rem; }
+        .frm-history-info time { display: block; margin-top: .1rem; color: rgb(var(--frm-muted)); font-size: .72rem; }
+        .frm-history-actions { display: flex; align-items: center; justify-content: flex-end; gap: .25rem; }
+        .frm-history-actions .frm-button { min-height: 2.15rem; padding: .4rem .6rem; font-size: .75rem; }
 
         @media (max-width: 1100px) {
             .frm-commandbar { grid-template-columns: 1fr auto; }
@@ -945,7 +1018,9 @@
             .frm-new-group { width: 100%; }
             .frm-new-group .frm-button { padding-inline: .7rem; }
             .frm-child-zone { margin-inline-start: 1rem; }
-            .frm-list { grid-template-columns: 1fr; }
+            .frm-history-toolbar { align-items: flex-start; flex-direction: column; }
+            .frm-history-row { grid-template-columns: 1.8rem minmax(0, 1fr); }
+            .frm-history-actions { grid-column: 2; justify-content: flex-start; flex-wrap: wrap; }
         }
     </style>
 </x-filament-panels::page>

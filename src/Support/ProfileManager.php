@@ -449,6 +449,29 @@ class ProfileManager
         return static::publish($profile->fresh(), $actor);
     }
 
+    public static function deleteVersion(Model $profile, int $versionId): bool
+    {
+        $profile = $profile->fresh();
+
+        if ((int) $profile->published_version_id === $versionId) {
+            return false;
+        }
+
+        return (bool) $profile->versions()->whereKey($versionId)->delete();
+    }
+
+    public static function deleteOldVersions(Model $profile): int
+    {
+        $profile = $profile->fresh();
+        $versions = $profile->versions();
+
+        if ($profile->published_version_id !== null) {
+            $versions->whereKeyNot($profile->published_version_id);
+        }
+
+        return $versions->delete();
+    }
+
     /** @return array<int, array<string, mixed>> */
     public static function snapshot(Model $profile): array
     {
