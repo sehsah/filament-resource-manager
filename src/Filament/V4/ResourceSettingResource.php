@@ -23,12 +23,12 @@ class ResourceSettingResource extends BaseResourceSettingResource
         return $schema->components(static::formComponents());
     }
 
-    public static function getNavigationIcon(): string | BackedEnum | Htmlable | null
+    public static function getNavigationIcon(): string|BackedEnum|Htmlable|null
     {
         return static::configuredIcon();
     }
 
-    public static function getNavigationGroup(): string | UnitEnum | null
+    public static function getNavigationGroup(): string|UnitEnum|null
     {
         return static::configuredGroup();
     }

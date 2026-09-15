@@ -109,7 +109,9 @@ history of published versions:
 - **Publish** freezes the current draft as a new version and makes it the
   panel's active navigation.
 - **Rollback** on any earlier version restores it into the draft and publishes
-  it again as a new version, so the history is only ever appended to.
+  it again as a new version.
+- **Delete history** removes one old version or all old versions after
+  confirmation. The current published version is always protected.
 - **Clone** starts a second profile from the current one — an alternative layout
   you can build up and publish when it is ready. Only the panel's default
   profile is live; the others are drafts in waiting.
@@ -117,8 +119,8 @@ history of published versions:
 The table and edit page, and the studio, are two views of the same navigation:
 
 - Saving the edit page writes into the default profile's draft as well, and the
-  page says so. Because a published version is immutable, the change reaches
-  the sidebar when you publish again.
+  page says so. Because the published snapshot is never edited in place, the
+  change reaches the sidebar when you publish again.
 - Saving a layout in the studio writes the placement — group, nesting, order,
   visibility — back to the settings table, so both screens keep showing the
   same thing.

@@ -143,7 +143,7 @@ class IconCatalog
      * @param  string|array<int, string>|null  $name
      * @return ($name is array ? array<string, string> : string|null)
      */
-    public static function label(string | array | null $name): string | array | null
+    public static function label(string|array|null $name): string|array|null
     {
         if (is_array($name)) {
             $labels = [];

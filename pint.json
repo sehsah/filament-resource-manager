@@ -1,0 +1,6 @@
+{
+    "notPath": [
+        "tests/Compatibility/laravel_stubs.php",
+        "tests/Compatibility/stubs.php"
+    ]
+}

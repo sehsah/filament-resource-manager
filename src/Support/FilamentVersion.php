@@ -3,6 +3,7 @@
 namespace MahmoudSehsah\FilamentResourceManager\Support;
 
 use Composer\InstalledVersions;
+use Filament\Schemas\Schema;
 
 /**
  * Detects which major version of Filament is installed.
@@ -64,6 +65,6 @@ class FilamentVersion
         }
 
         // Filament v4 introduced Filament\Schemas\Schema; v3 has no such class.
-        return class_exists(\Filament\Schemas\Schema::class) ? 4 : 3;
+        return class_exists(Schema::class) ? 4 : 3;
     }
 }

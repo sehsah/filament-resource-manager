@@ -3,6 +3,7 @@
 namespace MahmoudSehsah\FilamentResourceManager\Commands;
 
 use Filament\Facades\Filament;
+use Filament\Panel;
 use Illuminate\Console\Command;
 use MahmoudSehsah\FilamentResourceManager\Support\ResourceSynchroniser;
 use Throwable;
@@ -56,7 +57,7 @@ class SyncResourcesCommand extends Command
     }
 
     /**
-     * @return array<int, \Filament\Panel>
+     * @return array<int, Panel>
      */
     protected function panels(): array
     {

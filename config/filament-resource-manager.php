@@ -32,9 +32,9 @@ return [
     | Navigation profiles
     |--------------------------------------------------------------------------
     |
-    | Profiles keep a mutable draft and an immutable published version. The
-    | optional role resolver receives the authenticated user and should return
-    | role names or IDs when the application does not use Spatie Permission.
+    | Profiles keep a mutable draft and restorable published versions. Old
+    | versions may be deleted, while the current published version is always
+    | protected.
     |
     */
 

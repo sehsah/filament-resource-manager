@@ -21,7 +21,7 @@ class ResourceSettingResource extends BaseResourceSettingResource
         return $form->schema(static::formComponents());
     }
 
-    public static function getNavigationIcon(): string | Htmlable | null
+    public static function getNavigationIcon(): string|Htmlable|null
     {
         return static::configuredIcon();
     }

@@ -39,7 +39,9 @@ namespace Filament\Forms\Components {
 namespace Filament\Forms { class Form { public function schema(array $s): static { return $this; } } }
 
 namespace Filament\Schemas { class Schema { public function components(array $c): static { return $this; } public function schema(array $c): static { return $this; } } }
+/* FILAMENT_SCHEMA_SECTION_START */
 namespace Filament\Schemas\Components { class Section extends \Filament\Support\Components\ViewComponent {} }
+/* FILAMENT_SCHEMA_SECTION_END */
 
 namespace Filament\Navigation {
     class NavigationItem { public function getUrl(): ?string { return null; } public function __call($m, $a) { return $this; } }
@@ -98,9 +100,11 @@ namespace Filament\Resources {
         public static function getPages(): array { return []; }
 
         // --- members that differ between majors (patched for v3 by run.php) ---
+        /* FILAMENT_MAJOR_MEMBERS_START */
         public static function form(\Filament\Schemas\Schema $schema): \Filament\Schemas\Schema { return $schema; }
         public static function getNavigationIcon(): string|\BackedEnum|Htmlable|null { return null; }
         public static function getNavigationGroup(): string|\UnitEnum|null { return null; }
         public static function getSlug(?\Filament\Panel $panel = null): string { return ''; }
+        /* FILAMENT_MAJOR_MEMBERS_END */
     }
 }

@@ -1,4 +1,5 @@
 <?php
+
 $major = (int) getenv('FIL_MAJOR');
 if (! in_array($major, [3, 4, 5], true)) {
     fwrite(STDERR, "Set FIL_MAJOR to 3, 4 or 5.\n");
@@ -9,21 +10,26 @@ require __DIR__.'/laravel_stubs.php';
 
 $stubs = file_get_contents(__DIR__.'/stubs.php');
 if ($major === 3) {
+    $replaceOnce = static function (string $pattern, string $replacement) use (&$stubs): void {
+        $count = 0;
+        $stubs = preg_replace_callback($pattern, static fn (): string => $replacement, $stubs, 1, $count);
+
+        if ($count !== 1) {
+            throw new RuntimeException("Compatibility stub pattern did not match: {$pattern}");
+        }
+    };
+
     // v3 signatures for the members that changed in v4.
-    $stubs = str_replace(
-        'public static function form(\Filament\Schemas\Schema $schema): \Filament\Schemas\Schema { return $schema; }',
-        'public static function form(\Filament\Forms\Form $form): \Filament\Forms\Form { return $form; }', $stubs);
-    $stubs = str_replace(
-        'public static function getNavigationIcon(): string|\BackedEnum|Htmlable|null { return null; }',
-        'public static function getNavigationIcon(): string|Htmlable|null { return null; }', $stubs);
-    $stubs = str_replace(
-        'public static function getNavigationGroup(): string|\UnitEnum|null { return null; }',
-        'public static function getNavigationGroup(): ?string { return null; }', $stubs);
-    $stubs = str_replace(
-        'public static function getSlug(?\Filament\Panel $panel = null): string { return \'\'; }',
-        'public static function getSlug(): string { return \'\'; }', $stubs);
+    $replaceOnce(
+        '~/\* FILAMENT_MAJOR_MEMBERS_START \*/.*?/\* FILAMENT_MAJOR_MEMBERS_END \*/~s',
+        'public static function form(\Filament\Forms\Form $form): \Filament\Forms\Form { return $form; }'
+            .' public static function getNavigationIcon(): string|Htmlable|null { return null; }'
+            .' public static function getNavigationGroup(): ?string { return null; }'
+            .' public static function getSlug(): string { return \'\'; }',
+    );
+
     // v4/v5 moved Section out of Filament\Forms; on v3 it must not exist there.
-    $stubs = str_replace('namespace Filament\Schemas\Components { class Section extends \Filament\Support\Components\ViewComponent {} }', '', $stubs);
+    $replaceOnce('~/\* FILAMENT_SCHEMA_SECTION_START \*/.*?/\* FILAMENT_SCHEMA_SECTION_END \*/~s', '');
 }
 
 $tmp = sys_get_temp_dir()."/frm_stubs_$major.php";
@@ -41,6 +47,11 @@ spl_autoload_register(function ($class) {
     }
 });
 
+use Filament\Contracts\Plugin;
+use Filament\Forms\Components\Section;
+use Filament\Navigation\NavigationManager;
+use Filament\Panel;
+use Filament\Resources\Pages\EditRecord;
 use MahmoudSehsah\FilamentResourceManager\Support\FilamentVersion;
 
 FilamentVersion::fake($major);
@@ -89,9 +100,9 @@ if ($failed) {
 $resource = "{$ns}Filament\\{$variant}\\ResourceSettingResource";
 
 foreach ([
-    [$resource, \Filament\Resources\Resource::class],
-    ["{$ns}Filament\\{$variant}\\Pages\\EditResourceSetting", \Filament\Resources\Pages\EditRecord::class],
-    ["{$ns}Navigation\\ManagedNavigationManager", \Filament\Navigation\NavigationManager::class],
+    [$resource, Filament\Resources\Resource::class],
+    ["{$ns}Filament\\{$variant}\\Pages\\EditResourceSetting", EditRecord::class],
+    ["{$ns}Navigation\\ManagedNavigationManager", NavigationManager::class],
 ] as [$child, $parent]) {
     if (! is_subclass_of($child, $parent)) {
         fwrite(STDERR, "  FAIL  $child does not extend $parent\n");
@@ -100,7 +111,7 @@ foreach ([
     echo "  ok    extends $parent\n";
 }
 
-if (! in_array(\Filament\Contracts\Plugin::class, class_implements("{$ns}FilamentResourceManagerPlugin"), true)) {
+if (! in_array(Plugin::class, class_implements("{$ns}FilamentResourceManagerPlugin"), true)) {
     fwrite(STDERR, "  FAIL  plugin contract not implemented\n");
     exit(1);
 }
@@ -118,7 +129,7 @@ foreach (['index', 'edit', 'studio'] as $page) {
 }
 
 $expectedSection = $major === 3
-    ? \Filament\Forms\Components\Section::class
+    ? Section::class
     : 'Filament\\Schemas\\Components\\Section';
 
 $section = "{$ns}Support\\Compat"::sectionClass();
@@ -138,8 +149,8 @@ echo '  ok    formComponents() built '.count($components)." sections\n";
 // Each panel must retain its own authorization callback. A single global
 // plugin instance would make the last registered panel's rule win everywhere.
 $pluginClass = "{$ns}FilamentResourceManagerPlugin";
-$adminPanel = new \Filament\Panel('admin');
-$appPanel = new \Filament\Panel('app');
+$adminPanel = new Panel('admin');
+$appPanel = new Panel('app');
 $adminPlugin = (new $pluginClass)->authorize(fn (): bool => true);
 $appPlugin = (new $pluginClass)->authorize(fn (): bool => false);
 $adminPlugin->register($adminPanel);
