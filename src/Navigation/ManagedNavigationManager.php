@@ -4,6 +4,7 @@ namespace MahmoudSehsah\FilamentResourceManager\Navigation;
 
 use Filament\Navigation\NavigationItem;
 use Filament\Navigation\NavigationManager;
+use MahmoudSehsah\FilamentResourceManager\Support\AccessResolver;
 use MahmoudSehsah\FilamentResourceManager\Support\DynamicBadgeResolver;
 use MahmoudSehsah\FilamentResourceManager\Support\OverrideRepository;
 use MahmoudSehsah\FilamentResourceManager\Support\ResourceDiscovery;
@@ -55,7 +56,7 @@ class ManagedNavigationManager extends NavigationManager
             return;
         }
 
-        $overrides = OverrideRepository::forPanel($panel->getId());
+        $overrides = OverrideRepository::forPanel($panel->getId(), auth()->user());
 
         if ($overrides === []) {
             return;
@@ -134,7 +135,7 @@ class ManagedNavigationManager extends NavigationManager
         array $override,
         array $labelsByResource = [],
     ): void {
-        if (($override['is_visible'] ?? true) === false) {
+        if (! AccessResolver::canAccessItem($override, auth()->user())) {
             $item->hidden();
 
             return;

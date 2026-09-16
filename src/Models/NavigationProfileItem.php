@@ -15,6 +15,8 @@ class NavigationProfileItem extends Model
         'is_visible' => 'boolean',
         'is_orphaned' => 'boolean',
         'badge_conditions' => 'array',
+        'roles' => 'array',
+        'permissions' => 'array',
     ];
 
     protected static function booted(): void

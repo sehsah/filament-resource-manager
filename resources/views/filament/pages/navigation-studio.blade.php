@@ -62,6 +62,23 @@
                 </div>
             </div>
 
+            <div class="frm-audience">
+                <div class="frm-audience-copy">
+                    <strong>{{ __('filament-resource-manager::manager.studio.audience') }}</strong>
+                    <span>{{ __('filament-resource-manager::manager.studio.audience_hint') }}</span>
+                </div>
+                <div class="frm-audience-roles">
+                    @forelse ($availableRoles as $role => $label)
+                        <label class="frm-role-choice">
+                            <input type="checkbox" wire:model="profileRoles" value="{{ $role }}">
+                            <span>{{ $label }}</span>
+                        </label>
+                    @empty
+                        <span class="frm-audience-empty">{{ __('filament-resource-manager::manager.studio.audience_empty') }}</span>
+                    @endforelse
+                </div>
+            </div>
+
             <script>
                 window.frmNavigationStudio = (initialItems, initialGroups) => ({
                     items: initialItems,
@@ -485,6 +502,50 @@
                 rgb(var(--frm-surface));
             box-shadow: 0 10px 30px rgba(0, 0, 0, .16);
         }
+
+        .frm-audience {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            border: 1px solid rgb(var(--frm-border));
+            border-radius: .85rem;
+            background: rgb(var(--frm-surface));
+            padding: .8rem 1rem;
+        }
+
+        .frm-audience-copy {
+            display: flex;
+            flex-direction: column;
+            gap: .2rem;
+            max-width: 42rem;
+        }
+
+        .frm-audience-copy strong { color: rgb(var(--frm-text)); font-size: .82rem; }
+        .frm-audience-copy span,
+        .frm-audience-empty { color: rgb(var(--frm-muted)); font-size: .75rem; line-height: 1.4; }
+        .frm-audience-roles { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .45rem; }
+
+        .frm-role-choice {
+            display: inline-flex;
+            align-items: center;
+            gap: .4rem;
+            border: 1px solid rgb(var(--frm-border));
+            border-radius: 999px;
+            background: rgb(var(--frm-surface-muted));
+            padding: .35rem .65rem;
+            color: rgb(var(--frm-text-soft));
+            font-size: .75rem;
+            cursor: pointer;
+        }
+
+        .frm-role-choice:has(input:checked) {
+            border-color: rgb(var(--primary-500, 59, 130, 246));
+            background: color-mix(in srgb, var(--primary-500, rgb(59, 130, 246)) 12%, rgb(var(--frm-surface)));
+            color: rgb(var(--frm-text));
+        }
+
+        .frm-role-choice input { accent-color: rgb(var(--primary-500, 59, 130, 246)); }
 
         .frm-profile-picker,
         .frm-create-profile,
@@ -1005,6 +1066,8 @@
         @media (max-width: 800px) {
             .frm-studio-grid { grid-template-columns: 1fr; }
             .frm-preview { position: static; }
+            .frm-audience { align-items: stretch; flex-direction: column; }
+            .frm-audience-roles { justify-content: flex-start; }
         }
 
         @media (max-width: 600px) {

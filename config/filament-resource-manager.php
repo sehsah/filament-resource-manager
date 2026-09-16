@@ -142,6 +142,26 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Access control (Roles & Permissions)
+    |--------------------------------------------------------------------------
+    |
+    | When Spatie Laravel Permission is installed, roles and permissions are
+    | discovered automatically. You can also define custom roles and permissions
+    | here, or configure the models used for discovery.
+    |
+    */
+
+    'access_control' => [
+        'roles' => [],
+        'permissions' => [],
+        'models' => [
+            'role' => 'Spatie\\Permission\\Models\\Role',
+            'permission' => 'Spatie\\Permission\\Models\\Permission',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Authorization
     |--------------------------------------------------------------------------
     |

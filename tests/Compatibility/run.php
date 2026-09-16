@@ -76,6 +76,7 @@ $classes = [
     "{$ns}Support\\ResourceSynchroniser",
     "{$ns}Support\\ProfileManager",
     "{$ns}Support\\ProfileResolver",
+    "{$ns}Support\\AccessResolver",
     "{$ns}Support\\ModelCatalog",
     "{$ns}Support\\DynamicBadgeResolver",
     "{$ns}Support\\OverrideRepository",

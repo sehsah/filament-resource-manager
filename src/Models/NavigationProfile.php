@@ -12,6 +12,7 @@ class NavigationProfile extends Model
     protected $casts = [
         'is_default' => 'boolean',
         'published_at' => 'datetime',
+        'roles' => 'array',
     ];
 
     protected static function booted(): void

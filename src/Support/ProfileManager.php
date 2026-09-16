@@ -32,6 +32,10 @@ class ProfileManager
         'badge_color',
         'badge_tooltip',
         'is_visible',
+        'roles',
+        'permissions',
+        'roles_condition',
+        'permissions_condition',
         'default_label',
         'default_icon',
         'default_navigation_group',
@@ -281,6 +285,10 @@ class ProfileManager
                     'parent_resource_class' => $item->parent_resource_class,
                     'sort' => $item->sort,
                     'is_visible' => (bool) $item->is_visible,
+                    'roles' => $item->roles,
+                    'permissions' => $item->permissions,
+                    'roles_condition' => $item->roles_condition ?: 'any',
+                    'permissions_condition' => $item->permissions_condition ?: 'any',
                 ]));
         }
     }
@@ -394,17 +402,42 @@ class ProfileManager
             'badge_conditions' => $setting->badge_conditions,
             'badge_color' => $setting->badge_color,
             'badge_tooltip' => $setting->badge_tooltip,
+            'roles' => $setting->roles,
+            'permissions' => $setting->permissions,
+            'roles_condition' => $setting->roles_condition ?: 'any',
+            'permissions_condition' => $setting->permissions_condition ?: 'any',
         ];
     }
 
-    public static function publish(Model $profile, mixed $actor = null): Model
+    /** @param  array<int, string>|null  $roles */
+    public static function publish(Model $profile, mixed $actor = null, ?array $roles = null): Model
     {
-        return DB::transaction(function () use ($profile, $actor): Model {
+        return DB::transaction(function () use ($profile, $actor, $roles): Model {
+            $profile = $profile->fresh();
+            $roles = static::normalizeRoles($roles ?? (array) $profile->roles);
+            $fallback = null;
+
+            if ($roles !== []) {
+                $fallback = static::profileModel()::query()
+                    ->where('panel_id', $profile->panel_id)
+                    ->whereKeyNot($profile->getKey())
+                    ->whereNotNull('published_version_id')
+                    ->orderByDesc('is_default')
+                    ->orderByDesc('published_at')
+                    ->get()
+                    ->first(fn (Model $candidate): bool => static::normalizeRoles((array) $candidate->roles) === []);
+
+                if (! $fallback instanceof Model) {
+                    throw new InvalidArgumentException(__('filament-resource-manager::manager.studio.default_profile_required'));
+                }
+            }
+
             $versionNumber = ((int) $profile->versions()->lockForUpdate()->max('version')) + 1;
             [$actorType, $actorId] = static::actorIdentity($actor ?? Auth::user());
             $version = $profile->versions()->create([
                 'version' => $versionNumber,
                 'snapshot' => static::snapshot($profile),
+                'roles' => $roles,
                 'published_by_type' => $actorType,
                 'published_by_id' => $actorId,
                 'published_at' => now(),
@@ -412,15 +445,20 @@ class ProfileManager
 
             $profile->forceFill([
                 'status' => 'published',
-                'is_default' => true,
+                'roles' => $roles === [] ? null : $roles,
+                'is_default' => $roles === [],
                 'published_version_id' => $version->getKey(),
                 'published_at' => $version->published_at,
             ])->save();
 
             static::profileModel()::query()
                 ->where('panel_id', $profile->panel_id)
-                ->whereKeyNot($profile->getKey())
+                ->whereKeyNot(($fallback ?? $profile)->getKey())
                 ->update(['is_default' => false]);
+
+            if ($fallback instanceof Model && ! $fallback->is_default) {
+                $fallback->forceFill(['is_default' => true])->save();
+            }
 
             ProfileResolver::flush();
             OverrideRepository::flush();
@@ -433,7 +471,7 @@ class ProfileManager
     {
         $version = $profile->versions()->whereKey($versionId)->firstOrFail();
 
-        DB::transaction(function () use ($profile, $version): void {
+        return DB::transaction(function () use ($profile, $version, $actor): Model {
             $profile->items()->delete();
 
             foreach ((array) $version->snapshot as $item) {
@@ -444,9 +482,9 @@ class ProfileManager
             }
 
             static::mirrorToSettings($profile);
-        });
 
-        return static::publish($profile->fresh(), $actor);
+            return static::publish($profile->fresh(), $actor, $version->roles);
+        });
     }
 
     public static function deleteVersion(Model $profile, int $versionId): bool
@@ -482,6 +520,24 @@ class ProfileManager
             ->map(fn ($item): array => $item->only(static::ITEM_ATTRIBUTES))
             ->values()
             ->all();
+    }
+
+    /** @param  array<int, mixed>  $roles
+     * @return array<int, string>
+     */
+    protected static function normalizeRoles(array $roles): array
+    {
+        $normalized = [];
+
+        foreach ($roles as $role) {
+            if (! is_string($role) || trim($role) === '') {
+                throw new InvalidArgumentException(__('filament-resource-manager::manager.studio.invalid_profile_roles'));
+            }
+
+            $normalized[] = trim($role);
+        }
+
+        return array_values(array_unique($normalized));
     }
 
     protected static function seedFromLegacy(Model $profile): void

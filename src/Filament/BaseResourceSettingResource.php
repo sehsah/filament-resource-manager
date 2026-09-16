@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use MahmoudSehsah\FilamentResourceManager\FilamentResourceManagerPlugin;
 use MahmoudSehsah\FilamentResourceManager\Models\ResourceSetting;
+use MahmoudSehsah\FilamentResourceManager\Support\AccessResolver;
 use MahmoudSehsah\FilamentResourceManager\Support\Compat;
 use MahmoudSehsah\FilamentResourceManager\Support\FilamentVersion;
 use MahmoudSehsah\FilamentResourceManager\Support\IconCatalog;
@@ -159,6 +160,20 @@ abstract class BaseResourceSettingResource extends Resource
                 ToggleColumn::make('is_visible')
                     ->label(__('filament-resource-manager::manager.columns.visible')),
 
+                TextColumn::make('roles')
+                    ->label(__('filament-resource-manager::manager.columns.roles'))
+                    ->badge()
+                    ->color('info')
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('permissions')
+                    ->label(__('filament-resource-manager::manager.columns.permissions'))
+                    ->badge()
+                    ->color('warning')
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
                 TextColumn::make('resource_class')
                     ->label(__('filament-resource-manager::manager.columns.class'))
                     ->toggleable(isToggledHiddenByDefault: true)
@@ -274,6 +289,51 @@ abstract class BaseResourceSettingResource extends Resource
                         ->columnSpanFull(),
                 ])
                 ->columns(2),
+
+            $section::make(__('filament-resource-manager::manager.sections.access_control'))
+                ->description(__('filament-resource-manager::manager.sections.access_control_hint'))
+                ->icon(static::safeIcon('heroicon-o-shield-check'))
+                ->columnSpanFull()
+                ->columns(2)
+                ->schema([
+                    Select::make('roles')
+                        ->label(__('filament-resource-manager::manager.fields.roles'))
+                        ->helperText(__('filament-resource-manager::manager.fields.roles_hint'))
+                        ->options(fn (): array => AccessResolver::getAvailableRoles())
+                        ->multiple()
+                        ->searchable()
+                        ->preload()
+                        ->native(false),
+
+                    Select::make('roles_condition')
+                        ->label(__('filament-resource-manager::manager.fields.roles_condition'))
+                        ->options([
+                            'any' => __('filament-resource-manager::manager.fields.roles_condition_any'),
+                            'all' => __('filament-resource-manager::manager.fields.roles_condition_all'),
+                        ])
+                        ->default('any')
+                        ->native(false)
+                        ->required(),
+
+                    Select::make('permissions')
+                        ->label(__('filament-resource-manager::manager.fields.permissions'))
+                        ->helperText(__('filament-resource-manager::manager.fields.permissions_hint'))
+                        ->options(fn (): array => AccessResolver::getAvailablePermissions())
+                        ->multiple()
+                        ->searchable()
+                        ->preload()
+                        ->native(false),
+
+                    Select::make('permissions_condition')
+                        ->label(__('filament-resource-manager::manager.fields.permissions_condition'))
+                        ->options([
+                            'any' => __('filament-resource-manager::manager.fields.permissions_condition_any'),
+                            'all' => __('filament-resource-manager::manager.fields.permissions_condition_all'),
+                        ])
+                        ->default('any')
+                        ->native(false)
+                        ->required(),
+                ]),
 
             $section::make(__('filament-resource-manager::manager.sections.badge'))
                 ->description(__('filament-resource-manager::manager.sections.badge_hint'))

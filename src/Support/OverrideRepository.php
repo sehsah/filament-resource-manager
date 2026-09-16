@@ -39,6 +39,10 @@ class OverrideRepository
         'badge_color',
         'badge_tooltip',
         'is_visible',
+        'roles',
+        'permissions',
+        'roles_condition',
+        'permissions_condition',
     ];
 
     /** @var array<string, array<string, array<string, mixed>>> */
@@ -53,9 +57,9 @@ class OverrideRepository
     /**
      * @return array<string, array<string, mixed>> keyed by resource class
      */
-    public static function forPanel(?string $panelId): array
+    public static function forPanel(?string $panelId, mixed $user = null): array
     {
-        $profile = ProfileResolver::resolve(ResourceDiscovery::panel());
+        $profile = ProfileResolver::resolve(ResourceDiscovery::panel(), $user);
         $memoKey = implode('.', [
             $panelId ?? '__default__',
             $profile?->getKey() ?? 'legacy',

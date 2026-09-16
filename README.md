@@ -106,15 +106,16 @@ a draft.
 A studio layout belongs to a **profile**. A profile keeps a mutable draft and a
 history of published versions:
 
-- **Publish** freezes the current draft as a new version and makes it the
-  panel's active navigation.
+- **Publish** freezes the current draft as a new version. An unrestricted
+  profile becomes the panel default; a role-targeted profile is used only by
+  users with one of its selected roles. Publish a default profile first.
 - **Rollback** on any earlier version restores it into the draft and publishes
   it again as a new version.
 - **Delete history** removes one old version or all old versions after
   confirmation. The current published version is always protected.
 - **Clone** starts a second profile from the current one — an alternative layout
-  you can build up and publish when it is ready. Only the panel's default
-  profile is live; the others are drafts in waiting.
+  you can build up and publish when it is ready. Select its roles in Studio and
+  publish to make it live for those roles, while everyone else keeps the default.
 
 The table and edit page, and the studio, are two views of the same navigation:
 

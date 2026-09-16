@@ -4,6 +4,7 @@ namespace MahmoudSehsah\FilamentResourceManager\Filament\Concerns;
 
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Model;
+use MahmoudSehsah\FilamentResourceManager\Support\AccessResolver;
 use MahmoudSehsah\FilamentResourceManager\Support\DynamicBadgeResolver;
 use MahmoudSehsah\FilamentResourceManager\Support\ProfileManager;
 use MahmoudSehsah\FilamentResourceManager\Support\ResourceDiscovery;
@@ -18,6 +19,9 @@ trait ManagesNavigationStudio
     public array $studioItems = [];
 
     public string $newProfileName = '';
+
+    /** @var array<int, string> */
+    public array $profileRoles = [];
 
     public function mountManagesNavigationStudio(): void
     {
@@ -87,7 +91,18 @@ trait ManagesNavigationStudio
         }
 
         try {
-            $version = ProfileManager::publish($profile);
+            $availableRoles = array_map('strval', array_keys(AccessResolver::getAvailableRoles()));
+            $knownRoles = array_unique([...$availableRoles, ...(array) $profile->roles]);
+
+            if (collect($this->profileRoles)->contains(
+                fn (mixed $role): bool => ! is_string($role) || ! in_array($role, $knownRoles, true),
+            )) {
+                $this->notifyError(__('filament-resource-manager::manager.studio.invalid_profile_roles'));
+
+                return;
+            }
+
+            $version = ProfileManager::publish($profile, roles: $this->profileRoles);
             $this->notifySuccess(__('filament-resource-manager::manager.notifications.profile_published', [
                 'version' => $version->version,
             ]));
@@ -161,6 +176,11 @@ trait ManagesNavigationStudio
         $profiles = collect();
         $versions = collect();
         $versionCount = 0;
+        $availableRoles = AccessResolver::getAvailableRoles();
+
+        foreach ((array) $profile?->roles as $role) {
+            $availableRoles[$role] ??= $role;
+        }
 
         if ($panelId !== null) {
             try {
@@ -187,7 +207,7 @@ trait ManagesNavigationStudio
             ->values()
             ->all();
 
-        return compact('profile', 'profiles', 'versions', 'versionCount', 'groups');
+        return compact('profile', 'profiles', 'versions', 'versionCount', 'groups', 'availableRoles');
     }
 
     protected function profile(): ?Model
@@ -216,10 +236,12 @@ trait ManagesNavigationStudio
 
         if (! $profile instanceof Model) {
             $this->studioItems = [];
+            $this->profileRoles = [];
 
             return;
         }
 
+        $this->profileRoles = (array) ($profile->roles ?? []);
         $this->studioItems = $profile->items()
             ->where('is_orphaned', false)
             ->orderBy('sort')

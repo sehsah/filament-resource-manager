@@ -25,6 +25,10 @@ use MahmoudSehsah\FilamentResourceManager\Support\ProfileManager;
  * @property array<int, array<string, mixed>>|null $badge_conditions
  * @property string|null $badge_color
  * @property string|null $badge_tooltip
+ * @property array<int, string>|null $roles
+ * @property array<int, string>|null $permissions
+ * @property string $roles_condition
+ * @property string $permissions_condition
  * @property string|null $default_label
  * @property string|null $default_icon
  * @property string|null $default_navigation_group
@@ -40,6 +44,8 @@ class ResourceSetting extends Model
         'navigation_group_overridden' => 'boolean',
         'is_orphaned' => 'boolean',
         'badge_conditions' => 'array',
+        'roles' => 'array',
+        'permissions' => 'array',
     ];
 
     /**
@@ -112,7 +118,7 @@ class ResourceSetting extends Model
         }
 
         foreach (OverrideRepository::ATTRIBUTES as $attribute) {
-            if (in_array($attribute, ['is_visible', 'navigation_group_overridden'], true)) {
+            if (in_array($attribute, ['is_visible', 'navigation_group_overridden', 'roles_condition', 'permissions_condition'], true)) {
                 continue;
             }
 

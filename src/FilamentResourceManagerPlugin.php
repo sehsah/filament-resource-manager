@@ -26,6 +26,10 @@ class FilamentResourceManagerPlugin implements Plugin
 {
     protected ?Closure $authorizeUsing = null;
 
+    protected ?Closure $resolveUserRolesUsing = null;
+
+    protected ?Closure $resolveUserPermissionsUsing = null;
+
     /** @var array<string, self> */
     protected static array $instances = [];
 
@@ -68,6 +72,30 @@ class FilamentResourceManagerPlugin implements Plugin
         $this->authorizeUsing = $callback;
 
         return $this;
+    }
+
+    public function resolveUserRolesUsing(?Closure $callback): static
+    {
+        $this->resolveUserRolesUsing = $callback;
+
+        return $this;
+    }
+
+    public function getUserRolesResolver(): ?Closure
+    {
+        return $this->resolveUserRolesUsing;
+    }
+
+    public function resolveUserPermissionsUsing(?Closure $callback): static
+    {
+        $this->resolveUserPermissionsUsing = $callback;
+
+        return $this;
+    }
+
+    public function getUserPermissionsResolver(): ?Closure
+    {
+        return $this->resolveUserPermissionsUsing;
     }
 
     public function register(Panel $panel): void

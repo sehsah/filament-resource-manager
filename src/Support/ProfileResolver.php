@@ -11,16 +11,15 @@ use Throwable;
 /**
  * Resolves the published profile active for a panel.
  *
- * Profiles are intentionally panel-level. Publishing a profile makes it the
- * panel default, while its previous published versions remain available for
- * rollback.
+ * Role-targeted published profiles take precedence for matching users. All
+ * other users receive the unrestricted panel default when one is published.
  */
 class ProfileResolver
 {
     /** @var array<string, Model|null> */
     protected static array $memo = [];
 
-    public static function resolve(?Panel $panel = null): ?Model
+    public static function resolve(?Panel $panel = null, mixed $user = null): ?Model
     {
         if (! config('filament-resource-manager.profiles.enabled', true)) {
             return null;
@@ -33,21 +32,45 @@ class ProfileResolver
         }
 
         $panelId = $panel->getId();
+        $user ??= auth()->user();
+        $userRoles = $user ? AccessResolver::getUserRoles($user) : [];
+        sort($userRoles);
+        $roleKey = $userRoles !== [] ? implode(',', $userRoles) : '__guest__';
+        $memoKey = $panelId.':'.$roleKey;
 
-        if (array_key_exists($panelId, static::$memo)) {
-            return static::$memo[$panelId];
+        if (array_key_exists($memoKey, static::$memo)) {
+            return static::$memo[$memoKey];
         }
 
         try {
             $profileModel = static::profileModel();
 
-            return static::$memo[$panelId] = $profileModel::query()
+            $profiles = $profileModel::query()
                 ->where('panel_id', $panelId)
-                ->where('is_default', true)
                 ->whereNotNull('published_version_id')
-                ->first();
+                ->orderByDesc('published_at')
+                ->orderByDesc('id')
+                ->get();
+
+            if ($userRoles !== [] && Schema::hasColumn((new $profileModel)->getTable(), 'roles')) {
+                $matching = $profiles->first(fn (Model $candidate): bool => array_intersect(
+                    (array) ($candidate->roles ?? []),
+                    $userRoles,
+                ) !== []);
+
+                if ($matching instanceof Model) {
+                    return static::$memo[$memoKey] = $matching;
+                }
+            }
+
+            // Never expose a targeted profile to guests or unrelated roles,
+            // even if older publishes accidentally marked it as the default.
+            $unrestricted = $profiles->filter(fn (Model $candidate): bool => (array) ($candidate->roles ?? []) === []);
+
+            return static::$memo[$memoKey] = $unrestricted->first(fn (Model $candidate): bool => (bool) $candidate->is_default)
+                ?? $unrestricted->first();
         } catch (Throwable) {
-            return static::$memo[$panelId] = null;
+            return static::$memo[$memoKey] = null;
         }
     }
 

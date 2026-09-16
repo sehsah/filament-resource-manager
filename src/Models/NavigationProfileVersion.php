@@ -10,6 +10,7 @@ class NavigationProfileVersion extends Model
 
     protected $casts = [
         'snapshot' => 'array',
+        'roles' => 'array',
         'published_at' => 'datetime',
     ];
 
