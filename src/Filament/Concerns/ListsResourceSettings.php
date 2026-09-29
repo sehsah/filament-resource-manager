@@ -4,10 +4,9 @@ namespace MahmoudSehsah\FilamentResourceManager\Filament\Concerns;
 
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
-use MahmoudSehsah\FilamentResourceManager\Support\OverrideRepository;
 use MahmoudSehsah\FilamentResourceManager\Support\ResourceDiscovery;
 use MahmoudSehsah\FilamentResourceManager\Support\ResourceSynchroniser;
-use MahmoudSehsah\FilamentResourceManager\Support\TableColumns;
+use MahmoudSehsah\FilamentResourceManager\Support\SettingsReset;
 
 /**
  * Shared body for the manager's list page. Filament\Actions\Action and
@@ -57,28 +56,7 @@ trait ListsResourceSettings
                 ->requiresConfirmation()
                 ->modalDescription(__('filament-resource-manager::manager.actions.reset_confirm'))
                 ->action(function (): void {
-                    $model = static::getResource()::getModel();
-
-                    static::getResource()::getEloquentQuery()->update(
-                        TableColumns::only((new $model)->getTable(), [
-                            'label' => null,
-                            'icon' => null,
-                            'active_icon' => null,
-                            'navigation_group' => null,
-                            'navigation_group_overridden' => false,
-                            'navigation_parent_item' => null,
-                            'parent_resource_class' => null,
-                            'badge' => null,
-                            'badge_type' => 'static',
-                            'badge_model' => null,
-                            'badge_conditions' => null,
-                            'badge_color' => null,
-                            'badge_tooltip' => null,
-                            'is_visible' => true,
-                        ]),
-                    );
-
-                    OverrideRepository::flush();
+                    SettingsReset::all(static::getResource()::getEloquentQuery());
 
                     Notification::make()
                         ->title(__('filament-resource-manager::manager.notifications.reset'))

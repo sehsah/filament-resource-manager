@@ -1,5 +1,6 @@
 {
     "name": "sehsah/filament-resource-manager",
+    "type": "filament-plugin",
     "description": "Manage Filament resource navigation - label, icon, group, sort and visibility - from an admin UI. Supports Filament v3, v4 and v5.",
     "keywords": [
         "laravel",

@@ -3,9 +3,11 @@
 namespace MahmoudSehsah\FilamentResourceManager;
 
 use Filament\Navigation\NavigationManager;
+use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\ServiceProvider;
 use MahmoudSehsah\FilamentResourceManager\Commands\SyncResourcesCommand;
 use MahmoudSehsah\FilamentResourceManager\Navigation\ManagedNavigationManager;
+use MahmoudSehsah\FilamentResourceManager\Support\OverrideRepository;
 
 class FilamentResourceManagerServiceProvider extends ServiceProvider
 {
@@ -20,6 +22,7 @@ class FilamentResourceManagerServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->bindNavigationManager();
+        $this->resetStateBetweenRequests();
         $this->registerTranslations();
         $this->registerViews();
         $this->registerPublishing();
@@ -47,6 +50,23 @@ class FilamentResourceManagerServiceProvider extends ServiceProvider
         }
 
         $this->app->scoped(NavigationManager::class, fn (): ManagedNavigationManager => new ManagedNavigationManager);
+    }
+
+    /**
+     * The override, profile and column memos are static, which is free under
+     * PHP-FPM (every request starts a fresh process) but outlives the request
+     * in Octane and queue workers. Clear them at the start of each unit of
+     * work there. Listening by class-name string means Octane need not be
+     * installed.
+     */
+    protected function resetStateBetweenRequests(): void
+    {
+        $this->app['events']->listen([
+            'Laravel\\Octane\\Events\\RequestReceived',
+            'Laravel\\Octane\\Events\\TaskReceived',
+            'Laravel\\Octane\\Events\\TickReceived',
+            JobProcessing::class,
+        ], static fn (): mixed => OverrideRepository::resetState());
     }
 
     protected function registerTranslations(): void

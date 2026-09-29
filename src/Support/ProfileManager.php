@@ -152,7 +152,7 @@ class ProfileManager
 
                 if ($item === null) {
                     $row = $legacy->get($resource);
-                    $profile->items()->create([
+                    $profile->items()->create(static::onlyItemColumns([
                         'resource_class' => $resource,
                         'label' => $row?->label,
                         'icon' => $row?->icon,
@@ -169,8 +169,9 @@ class ProfileManager
                         'badge_color' => $row?->badge_color,
                         'badge_tooltip' => $row?->badge_tooltip,
                         'is_visible' => $row?->is_visible ?? true,
+                        ...static::accessValues($row),
                         ...$defaults,
-                    ]);
+                    ]));
                     $changed = true;
 
                     continue;
@@ -552,7 +553,7 @@ class ProfileManager
             ->mapWithKeys(fn ($row): array => [$row->effective_label => $row->resource_class]);
 
         foreach ($rows as $row) {
-            $profile->items()->create([
+            $profile->items()->create(static::onlyItemColumns([
                 'resource_class' => $row->resource_class,
                 'label' => $row->label,
                 'icon' => $row->icon,
@@ -574,8 +575,42 @@ class ProfileManager
                 'default_icon' => $row->default_icon,
                 'default_navigation_group' => $row->default_navigation_group,
                 'is_orphaned' => false,
-            ]);
+                ...static::accessValues($row),
+            ]));
         }
+    }
+
+    /**
+     * The access-control attributes of a legacy settings row.
+     *
+     * Seeding a profile without these would silently drop every role and
+     * permission restriction, making restricted items visible to everyone as
+     * soon as the profile is published.
+     *
+     * @return array<string, mixed>
+     */
+    protected static function accessValues(?Model $row): array
+    {
+        return [
+            'roles' => $row?->roles,
+            'permissions' => $row?->permissions,
+            'roles_condition' => $row?->roles_condition ?: 'any',
+            'permissions_condition' => $row?->permissions_condition ?: 'any',
+        ];
+    }
+
+    /**
+     * Drop attributes the items table does not have yet, so an application
+     * that updated the package before migrating does not hit an SQL error.
+     *
+     * @param  array<string, mixed>  $values
+     * @return array<string, mixed>
+     */
+    protected static function onlyItemColumns(array $values): array
+    {
+        $itemModel = static::itemModel();
+
+        return TableColumns::only((new $itemModel)->getTable(), $values);
     }
 
     /** @return array{0: string|null, 1: string|null} */

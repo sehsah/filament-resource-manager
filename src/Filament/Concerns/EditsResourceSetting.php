@@ -4,10 +4,9 @@ namespace MahmoudSehsah\FilamentResourceManager\Filament\Concerns;
 
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
-use MahmoudSehsah\FilamentResourceManager\Support\OverrideRepository;
 use MahmoudSehsah\FilamentResourceManager\Support\ProfileManager;
 use MahmoudSehsah\FilamentResourceManager\Support\ResourceDiscovery;
-use MahmoudSehsah\FilamentResourceManager\Support\TableColumns;
+use MahmoudSehsah\FilamentResourceManager\Support\SettingsReset;
 
 /**
  * Shared body for the manager's edit page. Filament\Actions\Action and
@@ -67,26 +66,7 @@ trait EditsResourceSetting
                 ->requiresConfirmation()
                 ->modalDescription(__('filament-resource-manager::manager.actions.reset_one_confirm'))
                 ->action(function (): void {
-                    $record = $this->getRecord();
-
-                    $record->forceFill(TableColumns::only($record->getTable(), [
-                        'label' => null,
-                        'icon' => null,
-                        'active_icon' => null,
-                        'navigation_group' => null,
-                        'navigation_group_overridden' => false,
-                        'navigation_parent_item' => null,
-                        'parent_resource_class' => null,
-                        'badge' => null,
-                        'badge_type' => 'static',
-                        'badge_model' => null,
-                        'badge_conditions' => null,
-                        'badge_color' => null,
-                        'badge_tooltip' => null,
-                        'is_visible' => true,
-                    ]))->save();
-
-                    OverrideRepository::flush();
+                    SettingsReset::one($this->getRecord());
 
                     $this->fillForm();
 

@@ -95,6 +95,20 @@ class OverrideRepository
         }
     }
 
+    /**
+     * Forget everything remembered in this process without touching the shared
+     * cache. Long-lived workers (Octane, queue workers) call this between
+     * requests, so a profile published in one worker is not hidden behind
+     * another worker's stale in-memory copy.
+     */
+    public static function resetState(): void
+    {
+        static::$memo = [];
+        static::$flushSuspended = false;
+        TableColumns::flush();
+        ProfileResolver::flush();
+    }
+
     public static function flush(): void
     {
         static::$memo = [];

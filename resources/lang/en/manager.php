@@ -99,9 +99,9 @@ return [
         'studio' => 'Navigation Studio',
         'sync' => 'Sync resources',
         'reset' => 'Reset all',
-        'reset_confirm' => 'This clears every custom name, icon, group, badge and visibility setting. Order is kept.',
+        'reset_confirm' => 'This clears every custom name, icon, group, badge and visibility setting. Order, roles and permissions are kept.',
         'reset_one' => 'Reset to defaults',
-        'reset_one_confirm' => 'This clears every customisation for this resource. Order is kept.',
+        'reset_one_confirm' => 'This clears every customisation for this resource. Order, roles and permissions are kept.',
     ],
 
     'notifications' => [
