@@ -12,7 +12,7 @@ Supports **Filament v3, v4 and v5** from one install.
 ## Installation
 
 ```bash
-composer require mahmoudsehsah/filament-resource-manager
+composer require sehsah/filament-resource-manager
 php artisan vendor:publish --tag=filament-resource-manager-migrations
 php artisan migrate
 ```
