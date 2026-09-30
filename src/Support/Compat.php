@@ -24,6 +24,19 @@ class Compat
     }
 
     /**
+     * Fieldset: Filament\Forms\Components\Fieldset on v3,
+     * Filament\Schemas\Components\Fieldset on v4/v5.
+     *
+     * @return class-string
+     */
+    public static function fieldsetClass(): string
+    {
+        return FilamentVersion::isSchemaBased()
+            ? 'Filament\\Schemas\\Components\\Fieldset'
+            : 'Filament\\Forms\\Components\\Fieldset';
+    }
+
+    /**
      * Table row edit action: Filament\Tables\Actions\EditAction on v3,
      * Filament\Actions\EditAction on v4/v5.
      *

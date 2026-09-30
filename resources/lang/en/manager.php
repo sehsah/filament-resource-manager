@@ -19,6 +19,13 @@ return [
         'class' => 'Resource class',
     ],
 
+    'icon_types' => [
+        'icon' => 'Icon',
+        'code' => 'Code',
+        'svg' => 'SVG',
+        'image' => 'Image',
+    ],
+
     'sections' => [
         'resource' => 'Resource',
         'resource_hint' => 'Read-only. This is the resource these settings apply to.',
@@ -38,6 +45,12 @@ return [
         'icon_hint' => 'Search your installed icon sets. Empty keeps the resource icon.',
         'active_icon' => 'Active icon',
         'active_icon_hint' => 'Shown while the item is the current page. Empty uses the icon above.',
+        'icon_type' => 'Icon type',
+        'icon_types_need_migration' => 'Run php artisan migrate to choose Code, SVG or Image icons.',
+        'icon_code_hint' => 'Type any Blade Icons name, e.g. heroicon-o-users. Empty keeps the default.',
+        'icon_svg_hint' => 'Paste SVG markup. Use currentColor to follow the sidebar colour. Scripts and external links are removed.',
+        'icon_svg_invalid' => 'This is not valid SVG markup. It must be a single <svg> element.',
+        'icon_image_hint' => 'Upload a PNG, JPG, GIF, WebP or SVG image, up to :size KB. A square image works best.',
         'group' => 'Navigation group',
         'group_hint' => 'Empty keeps the resource group.',
         'group_overridden' => 'Override the group',

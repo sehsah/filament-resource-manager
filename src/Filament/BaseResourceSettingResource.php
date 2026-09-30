@@ -3,17 +3,21 @@
 namespace MahmoudSehsah\FilamentResourceManager\Filament;
 
 use BladeUI\Icons\Factory;
+use Closure;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Forms\Components\ToggleButtons;
 use Filament\Resources\Resource;
-use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\HtmlString;
 use MahmoudSehsah\FilamentResourceManager\FilamentResourceManagerPlugin;
 use MahmoudSehsah\FilamentResourceManager\Models\ResourceSetting;
 use MahmoudSehsah\FilamentResourceManager\Support\AccessResolver;
@@ -21,6 +25,7 @@ use MahmoudSehsah\FilamentResourceManager\Support\Compat;
 use MahmoudSehsah\FilamentResourceManager\Support\FilamentVersion;
 use MahmoudSehsah\FilamentResourceManager\Support\IconCatalog;
 use MahmoudSehsah\FilamentResourceManager\Support\ModelCatalog;
+use MahmoudSehsah\FilamentResourceManager\Support\NavigationIcon;
 use MahmoudSehsah\FilamentResourceManager\Support\ProfileManager;
 use MahmoudSehsah\FilamentResourceManager\Support\ResourceDiscovery;
 use MahmoudSehsah\FilamentResourceManager\Support\TableColumns;
@@ -123,9 +128,17 @@ abstract class BaseResourceSettingResource extends Resource
             ->defaultPaginationPageOption(50)
             ->recordUrl(fn (Model $record): string => static::getUrl('edit', ['record' => $record]))
             ->columns([
-                IconColumn::make('effective_icon')
+                // Rendered by hand rather than with IconColumn, which only
+                // understands icon names - not SVG markup or images.
+                TextColumn::make('effective_icon')
                     ->label(__('filament-resource-manager::manager.columns.icon'))
-                    ->icon(fn ($record): ?string => $record->effective_icon),
+                    ->getStateUsing(fn ($record): ?string => NavigationIcon::previewHtml(
+                        $record,
+                        'icon',
+                        $record->default_icon,
+                    ))
+                    ->formatStateUsing(fn (?string $state): HtmlString => static::iconPreviewBox($state, '1.5rem'))
+                    ->placeholder('—'),
 
                 TextColumn::make('effective_label')
                     ->label(__('filament-resource-manager::manager.columns.label'))
@@ -225,6 +238,7 @@ abstract class BaseResourceSettingResource extends Resource
                 ]),
 
             $section::make(__('filament-resource-manager::manager.sections.navigation'))
+                ->columnSpanFull()
                 ->icon(static::safeIcon('heroicon-o-bars-3'))
                 ->schema([
                     TextInput::make('label')
@@ -232,11 +246,12 @@ abstract class BaseResourceSettingResource extends Resource
                         ->helperText(__('filament-resource-manager::manager.fields.label_hint'))
                         ->placeholder(fn ($record): ?string => $record?->default_label)
                         ->prefixIcon(static::safeIcon('heroicon-o-pencil-square'))
+                        ->columnSpanFull()
                         ->maxLength(255),
 
-                    static::iconField('icon'),
+                    static::iconFieldset('icon'),
 
-                    static::iconField('active_icon'),
+                    static::iconFieldset('active_icon'),
 
                     Toggle::make('is_visible')
                         ->label(__('filament-resource-manager::manager.fields.is_visible'))
@@ -246,6 +261,7 @@ abstract class BaseResourceSettingResource extends Resource
                 ->columns(2),
 
             $section::make(__('filament-resource-manager::manager.sections.placement'))
+                ->columnSpanFull()
                 ->icon(static::safeIcon('heroicon-o-rectangle-group'))
                 ->schema([
                     TextInput::make('navigation_group')
@@ -417,6 +433,140 @@ abstract class BaseResourceSettingResource extends Resource
                 ])
                 ->columns(3),
         ];
+    }
+
+    /**
+     * An icon slot with a choice of how the icon is given: picked from the
+     * installed icon sets, typed as an icon name, pasted as SVG markup, or
+     * uploaded as an image. Only the input for the chosen type is shown.
+     *
+     * Before the migration that adds the type columns has run, this is the
+     * plain icon field it always was, so the form never writes a column the
+     * table does not have.
+     */
+    public static function iconFieldset(string $slot): mixed
+    {
+        if (! static::hasIconTypeColumns()) {
+            // Say why the type switch is missing instead of hiding it silently.
+            return static::iconField($slot)
+                ->helperText(__("filament-resource-manager::manager.fields.{$slot}_hint")
+                    .' '.__('filament-resource-manager::manager.fields.icon_types_need_migration'));
+        }
+
+        $types = NavigationIcon::enabledTypes();
+        $typeField = "{$slot}_type";
+        $isType = fn (string $type): Closure => fn ($get): bool => NavigationIcon::normalizeType($get($typeField)) === $type;
+        $fieldset = Compat::fieldsetClass();
+        $components = [];
+
+        $components[] = ToggleButtons::make($typeField)
+            ->label(__('filament-resource-manager::manager.fields.icon_type'))
+            ->options(array_combine($types, array_map(
+                fn (string $type): string => __("filament-resource-manager::manager.icon_types.{$type}"),
+                $types,
+            )))
+            ->icons(array_filter(array_intersect_key([
+                NavigationIcon::TYPE_ICON => static::safeIcon('heroicon-o-squares-2x2'),
+                NavigationIcon::TYPE_CODE => static::safeIcon('heroicon-o-code-bracket'),
+                NavigationIcon::TYPE_SVG => static::safeIcon('heroicon-o-code-bracket-square'),
+                NavigationIcon::TYPE_IMAGE => static::safeIcon('heroicon-o-photo'),
+            ], array_flip($types))))
+            ->formatStateUsing(fn ($state): string => NavigationIcon::normalizeType($state))
+            ->default(NavigationIcon::TYPE_ICON)
+            // Separate buttons rather than grouped(): a grouped bar has a
+            // fixed width and overflows a narrow column, separate ones wrap.
+            ->inline()
+            ->live()
+            ->visible(count($types) > 1);
+
+        if (in_array(NavigationIcon::TYPE_ICON, $types, true)) {
+            // The picker and the typed name share the `{slot}` column. Both are
+            // dehydrated even while hidden, so the hidden one never strips the
+            // value the visible one just set.
+            $components[] = static::iconField($slot)
+                ->hiddenLabel()
+                ->visible($isType(NavigationIcon::TYPE_ICON))
+                ->dehydratedWhenHidden();
+        }
+
+        if (in_array(NavigationIcon::TYPE_CODE, $types, true)) {
+            $components[] = TextInput::make($slot)
+                ->key("{$slot}_code")
+                ->hiddenLabel()
+                ->helperText(__('filament-resource-manager::manager.fields.icon_code_hint'))
+                ->placeholder('heroicon-o-users')
+                ->live(onBlur: true)
+                ->prefixIcon(fn ($state): ?string => static::safeIcon($state)
+                    ?? static::safeIcon('heroicon-o-code-bracket'))
+                ->maxLength(255)
+                ->visible($isType(NavigationIcon::TYPE_CODE))
+                ->dehydratedWhenHidden();
+        }
+
+        if (in_array(NavigationIcon::TYPE_SVG, $types, true)) {
+            $components[] = Textarea::make("{$slot}_svg")
+                ->hiddenLabel()
+                ->helperText(__('filament-resource-manager::manager.fields.icon_svg_hint'))
+                ->placeholder('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">…</svg>')
+                ->hint(fn ($state): ?HtmlString => NavigationIcon::sanitizeSvg($state) === null
+                    ? null
+                    : static::iconPreviewBox(NavigationIcon::sanitizeSvg($state), '1.5rem'))
+                ->rows(4)
+                ->live(onBlur: true)
+                ->maxLength(NavigationIcon::svgMaxLength())
+                ->rule(fn (): Closure => function (string $attribute, mixed $value, Closure $fail): void {
+                    if (filled($value) && NavigationIcon::sanitizeSvg((string) $value) === null) {
+                        $fail(__('filament-resource-manager::manager.fields.icon_svg_invalid'));
+                    }
+                })
+                ->visible($isType(NavigationIcon::TYPE_SVG));
+        }
+
+        if (in_array(NavigationIcon::TYPE_IMAGE, $types, true)) {
+            $components[] = FileUpload::make("{$slot}_image")
+                ->hiddenLabel()
+                ->helperText(__('filament-resource-manager::manager.fields.icon_image_hint', [
+                    'size' => NavigationIcon::uploadMaxSize(),
+                ]))
+                ->image()
+                ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/svg+xml'])
+                ->disk(NavigationIcon::uploadDisk())
+                ->directory(NavigationIcon::uploadDirectory())
+                ->visibility('public')
+                ->maxSize(NavigationIcon::uploadMaxSize())
+                ->visible($isType(NavigationIcon::TYPE_IMAGE));
+        }
+
+        // Full width: side by side, each box is too narrow for the type
+        // buttons plus a readable icon name.
+        return $fieldset::make(__("filament-resource-manager::manager.fields.{$slot}"))
+            ->columns(1)
+            ->columnSpanFull()
+            ->schema($components);
+    }
+
+    /**
+     * Icon markup in a fixed-size box, so an SVG or image of any intrinsic
+     * size lines up with the named icons around it.
+     */
+    public static function iconPreviewBox(?string $html, string $size = '1.25rem'): HtmlString
+    {
+        if (blank($html)) {
+            return new HtmlString('');
+        }
+
+        return new HtmlString(
+            '<span style="display:inline-flex;align-items:center;justify-content:center;'
+            ."width:{$size};height:{$size};flex:0 0 auto;\">{$html}</span>"
+        );
+    }
+
+    public static function hasIconTypeColumns(): bool
+    {
+        return TableColumns::has(
+            (new (static::getModel()))->getTable(),
+            NavigationIcon::ATTRIBUTES,
+        );
     }
 
     /**

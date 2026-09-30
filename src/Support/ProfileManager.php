@@ -21,6 +21,12 @@ class ProfileManager
         'label',
         'icon',
         'active_icon',
+        'icon_type',
+        'icon_svg',
+        'icon_image',
+        'active_icon_type',
+        'active_icon_svg',
+        'active_icon_image',
         'navigation_group',
         'navigation_group_overridden',
         'parent_resource_class',
@@ -103,7 +109,7 @@ class ProfileManager
 
             if ($source instanceof Model) {
                 foreach ($source->items()->where('is_orphaned', false)->get() as $item) {
-                    $profile->items()->create($item->only(static::ITEM_ATTRIBUTES));
+                    $profile->items()->create(static::onlyItemColumns($item->only(static::ITEM_ATTRIBUTES)));
                 }
             } else {
                 static::seedFromLegacy($profile);
@@ -157,6 +163,7 @@ class ProfileManager
                         'label' => $row?->label,
                         'icon' => $row?->icon,
                         'active_icon' => $row?->active_icon,
+                        ...NavigationIcon::copyValues($row),
                         'navigation_group' => $row?->navigation_group,
                         'navigation_group_overridden' => (bool) ($row?->navigation_group_overridden)
                             || filled($row?->navigation_group),
@@ -391,6 +398,7 @@ class ProfileManager
             'label' => $setting->label,
             'icon' => $setting->icon,
             'active_icon' => $setting->active_icon,
+            ...NavigationIcon::copyValues($setting),
             'navigation_group' => $setting->navigation_group,
             'navigation_group_overridden' => (bool) $setting->navigation_group_overridden
                 || filled($setting->navigation_group),
@@ -476,10 +484,10 @@ class ProfileManager
             $profile->items()->delete();
 
             foreach ((array) $version->snapshot as $item) {
-                $profile->items()->create(array_intersect_key(
+                $profile->items()->create(static::onlyItemColumns(array_intersect_key(
                     (array) $item,
                     array_flip(static::ITEM_ATTRIBUTES),
-                ));
+                )));
             }
 
             static::mirrorToSettings($profile);
@@ -558,6 +566,7 @@ class ProfileManager
                 'label' => $row->label,
                 'icon' => $row->icon,
                 'active_icon' => $row->active_icon,
+                ...NavigationIcon::copyValues($row),
                 'navigation_group' => $row->navigation_group,
                 'navigation_group_overridden' => (bool) $row->navigation_group_overridden
                     || filled($row->navigation_group),

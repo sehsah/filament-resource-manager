@@ -6,6 +6,7 @@ use Filament\Navigation\NavigationItem;
 use Filament\Navigation\NavigationManager;
 use MahmoudSehsah\FilamentResourceManager\Support\AccessResolver;
 use MahmoudSehsah\FilamentResourceManager\Support\DynamicBadgeResolver;
+use MahmoudSehsah\FilamentResourceManager\Support\NavigationIcon;
 use MahmoudSehsah\FilamentResourceManager\Support\OverrideRepository;
 use MahmoudSehsah\FilamentResourceManager\Support\ResourceDiscovery;
 use Throwable;
@@ -145,12 +146,17 @@ class ManagedNavigationManager extends NavigationManager
             $item->label($override['label']);
         }
 
-        if (filled($override['icon'] ?? null)) {
-            $item->icon($override['icon']);
+        // An icon name, SVG markup or an image - whichever type was chosen.
+        $icon = NavigationIcon::resolve($override, 'icon');
+
+        if ($icon !== null) {
+            $item->icon($icon);
         }
 
-        if (filled($override['active_icon'] ?? null)) {
-            $item->activeIcon($override['active_icon']);
+        $activeIcon = NavigationIcon::resolve($override, 'active_icon');
+
+        if ($activeIcon !== null) {
+            $item->activeIcon($activeIcon);
         }
 
         if (($override['navigation_group_overridden'] ?? false) === true) {

@@ -79,8 +79,8 @@ The edit page exposes every attribute the package can apply:
 | Field | Effect |
 | --- | --- |
 | **Name** | Replaces the sidebar label. Blank keeps the resource's own label. |
-| **Icon** | Any icon name, e.g. `heroicon-o-users`. Blank keeps the resource's icon. |
-| **Active icon** | Shown while that item is the current page. Defaults to the icon above. |
+| **Icon** | Choose how the icon is given — see [Icon types](#icon-types). Blank keeps the resource's icon. |
+| **Active icon** | Shown while that item is the current page, with the same four types. Defaults to the icon above. |
 | **Visible in navigation** | Off hides the item from the sidebar. |
 | **Navigation group** | Moves the item into a group. Existing groups are suggested. |
 | **Override the group** | On with a group named above puts the item there; on with the field empty takes it out of every group. Off keeps whatever group the resource declares. |
@@ -89,6 +89,24 @@ The edit page exposes every attribute the package can apply:
 | **Badge type** | Choose static text or a live count from an Eloquent model. |
 | **Badge model and conditions** | Count every record or add multiple column/operator/value conditions. All conditions are combined with AND. |
 | **Badge colour / tooltip** | Style the static or dynamic badge and add optional explanatory text. |
+
+### Icon types
+
+Both icon fields have a type switch:
+
+| Type | What you enter | How it renders |
+| --- | --- | --- |
+| **Icon** | Pick from the installed Blade Icons sets (searchable). | Named icon |
+| **Code** | Type any icon name by hand, e.g. `heroicon-o-users` or `tabler-home`. | Named icon |
+| **SVG** | Paste raw `<svg>` markup. Use `currentColor` so it follows the sidebar colour. | Inline SVG (an `<img>` on Filament releases whose `NavigationItem::icon()` only accepts strings) |
+| **Image** | Upload a PNG, JPG, GIF, WebP or SVG file. | `<img>` from the configured disk |
+
+Pasted SVG is sanitised before it is saved or rendered: scripts, event handlers,
+`foreignObject`, external links and external `url()` references are removed,
+and anything that is not a single well-formed `<svg>` element is rejected.
+Uploaded images go to the `public` disk under `navigation-icons/` by default, so
+run `php artisan storage:link` if you have not already. Both are configurable
+under `icons` in the config file, as is the list of types offered.
 
 **Reset to defaults** on the edit page clears that one resource; **Reset all** on
 the table clears every resource. Both keep the ordering.
@@ -233,7 +251,8 @@ See `config/filament-resource-manager.php`:
 - `auto_sync` — sync on page open
 - `cache` — overrides are cached and flushed on every write
 - `icons` — which icon sets the picker offers, how many results a search returns,
-  and the catalogue's cache. The list is built by scanning the sets Blade Icons
+  the catalogue's cache, which icon types are offered, the SVG size limit and
+  where uploaded icon images are stored. The list is built by scanning the sets Blade Icons
   has registered, so call `IconCatalog::flush()` after installing a new one
 - `excluded_resources` — resource classes the manager should ignore
 - `gate` — an ability checked when no `authorize()` closure is set

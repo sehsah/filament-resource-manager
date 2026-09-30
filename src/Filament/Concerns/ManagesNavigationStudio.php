@@ -6,6 +6,7 @@ use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Model;
 use MahmoudSehsah\FilamentResourceManager\Support\AccessResolver;
 use MahmoudSehsah\FilamentResourceManager\Support\DynamicBadgeResolver;
+use MahmoudSehsah\FilamentResourceManager\Support\NavigationIcon;
 use MahmoudSehsah\FilamentResourceManager\Support\ProfileManager;
 use MahmoudSehsah\FilamentResourceManager\Support\ResourceDiscovery;
 use MahmoudSehsah\FilamentResourceManager\Support\ResourceSynchroniser;
@@ -250,6 +251,7 @@ trait ManagesNavigationStudio
                 'resource_class' => $item->resource_class,
                 'label' => $item->effective_label ?: class_basename($item->resource_class),
                 'icon' => $item->effective_icon,
+                'icon_html' => NavigationIcon::previewHtml($item, 'icon', $item->default_icon),
                 'navigation_group' => $item->effective_navigation_group,
                 'parent_resource_class' => $item->parent_resource_class,
                 'sort' => $item->sort,

@@ -238,7 +238,8 @@
                                                         <circle cx="6" cy="15" r="1.25" /><circle cx="14" cy="15" r="1.25" />
                                                     </svg>
                                                 </span>
-                                                <span class="frm-item-icon" aria-hidden="true">
+                                                <span x-show="item.icon_html" class="frm-item-icon" aria-hidden="true" x-html="item.icon_html"></span>
+                                                <span x-show="! item.icon_html" class="frm-item-icon" aria-hidden="true">
                                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                                                         <rect x="4" y="4" width="6" height="6" rx="1.5" />
                                                         <rect x="14" y="4" width="6" height="6" rx="1.5" />
@@ -338,7 +339,8 @@
                                 <template x-for="item in topItems(group.key).filter(item => item.is_visible)" :key="'preview-item-' + item.resource_class">
                                     <div>
                                         <div class="frm-preview-item">
-                                            <span class="frm-preview-icon" aria-hidden="true">
+                                            <span x-show="item.icon_html" class="frm-preview-icon" aria-hidden="true" x-html="item.icon_html"></span>
+                                            <span x-show="! item.icon_html" class="frm-preview-icon" aria-hidden="true">
                                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                                                     <rect x="4" y="4" width="6" height="6" rx="1.5" />
                                                     <rect x="14" y="4" width="6" height="6" rx="1.5" />
@@ -826,7 +828,9 @@
             color: var(--primary-400, rgb(96, 165, 250));
         }
         .frm-item-icon svg,
-        .frm-preview-icon svg { width: .95rem; height: .95rem; }
+        .frm-preview-icon svg,
+        .frm-item-icon img,
+        .frm-preview-icon img { width: .95rem; height: .95rem; object-fit: contain; }
         .frm-item-label { flex: 1; min-width: 0; overflow: hidden; font-size: .87rem; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
         .frm-hidden-item { opacity: .5; }
 

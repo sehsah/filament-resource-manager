@@ -95,6 +95,13 @@ return [
     | leave it empty to offer every registered set. "limit" is how many icons a
     | search returns, and "max" caps the catalogue itself.
     |
+    | "types" are the ways an icon can be given, in the order they are offered:
+    |   icon  - picked from the installed icon sets
+    |   code  - an icon name typed by hand, e.g. heroicon-o-users
+    |   svg   - raw SVG markup, sanitised before it is rendered
+    |   image - an uploaded image, stored on "upload.disk"
+    | Remove a type to hide it from the form.
+    |
     */
 
     'icons' => [
@@ -104,6 +111,13 @@ return [
         'sets' => [],
         'limit' => 50,
         'max' => 5000,
+        'types' => ['icon', 'code', 'svg', 'image'],
+        'svg_max_length' => 50000,
+        'upload' => [
+            'disk' => 'public',
+            'directory' => 'navigation-icons',
+            'max_size' => 1024, // kilobytes
+        ],
     ],
 
     /*

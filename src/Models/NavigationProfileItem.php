@@ -3,6 +3,7 @@
 namespace MahmoudSehsah\FilamentResourceManager\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use MahmoudSehsah\FilamentResourceManager\Support\NavigationIcon;
 use MahmoudSehsah\FilamentResourceManager\Support\OverrideRepository;
 
 class NavigationProfileItem extends Model
@@ -21,6 +22,9 @@ class NavigationProfileItem extends Model
 
     protected static function booted(): void
     {
+        static::saving(static function (NavigationProfileItem $item): void {
+            NavigationIcon::normalizeModel($item);
+        });
         static::saved(static function (): void {
             OverrideRepository::flush();
         });

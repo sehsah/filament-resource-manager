@@ -34,13 +34,17 @@ namespace Filament\Forms\Components {
     class Toggle extends Field {}
     class Select extends Field {}
     class Repeater extends Field {}
+    class Textarea extends Field {}
+    class ToggleButtons extends Field {}
+    class FileUpload extends Field {}
     class Section extends Component {}
+    class Fieldset extends Component {}
 }
 namespace Filament\Forms { class Form { public function schema(array $s): static { return $this; } } }
 
 namespace Filament\Schemas { class Schema { public function components(array $c): static { return $this; } public function schema(array $c): static { return $this; } } }
 /* FILAMENT_SCHEMA_SECTION_START */
-namespace Filament\Schemas\Components { class Section extends \Filament\Support\Components\ViewComponent {} }
+namespace Filament\Schemas\Components { class Section extends \Filament\Support\Components\ViewComponent {} class Fieldset extends \Filament\Support\Components\ViewComponent {} }
 /* FILAMENT_SCHEMA_SECTION_END */
 
 namespace Filament\Navigation {

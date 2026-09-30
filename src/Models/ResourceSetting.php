@@ -3,6 +3,7 @@
 namespace MahmoudSehsah\FilamentResourceManager\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use MahmoudSehsah\FilamentResourceManager\Support\NavigationIcon;
 use MahmoudSehsah\FilamentResourceManager\Support\OverrideRepository;
 use MahmoudSehsah\FilamentResourceManager\Support\ProfileManager;
 
@@ -13,6 +14,12 @@ use MahmoudSehsah\FilamentResourceManager\Support\ProfileManager;
  * @property string|null $label
  * @property string|null $icon
  * @property string|null $active_icon
+ * @property string|null $icon_type
+ * @property string|null $icon_svg
+ * @property string|null $icon_image
+ * @property string|null $active_icon_type
+ * @property string|null $active_icon_svg
+ * @property string|null $active_icon_image
  * @property string|null $navigation_group
  * @property bool $navigation_group_overridden
  * @property string|null $navigation_parent_item
@@ -62,6 +69,12 @@ class ResourceSetting extends Model
      */
     protected static function booted(): void
     {
+        // Drop the payloads of icon types that are not selected, so switching
+        // from SVG back to a named icon leaves no stale markup behind.
+        static::saving(static function (ResourceSetting $setting): void {
+            NavigationIcon::normalizeModel($setting);
+        });
+
         static::saved(static function (ResourceSetting $setting): void {
             OverrideRepository::flush();
             ProfileManager::syncSetting($setting);
@@ -122,12 +135,24 @@ class ResourceSetting extends Model
                 continue;
             }
 
+            // Icons are judged as a whole below: a type on its own, or the
+            // payload of a type that is not selected, overrides nothing.
+            if (in_array($attribute, ['icon', 'active_icon', ...NavigationIcon::ATTRIBUTES], true)) {
+                continue;
+            }
+
             if (($this->badge_type ?? 'static') !== 'dynamic'
                 && in_array($attribute, ['badge_type', 'badge_model', 'badge_conditions'], true)) {
                 continue;
             }
 
             if (filled($this->{$attribute})) {
+                return false;
+            }
+        }
+
+        foreach (NavigationIcon::SLOTS as $slot) {
+            if (NavigationIcon::hasOverride($this, $slot)) {
                 return false;
             }
         }
