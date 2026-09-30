@@ -248,6 +248,8 @@ See `config/filament-resource-manager.php`:
 - `table_name`, `model` — swap the table or extend the model
 - `profiles` — turn navigation profiles on or off, and swap their tables or
   models
+- `profiles.auto_publish` — on by default: a change saved in the Resource Manager republishes the
+  governing profile at once. Turn it off to collect changes in the draft and publish from Navigation Studio
 - `auto_sync` — sync on page open
 - `cache` — overrides are cached and flushed on every write
 - `icons` — which icon sets the picker offers, how many results a search returns,

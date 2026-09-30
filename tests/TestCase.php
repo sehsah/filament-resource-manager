@@ -6,6 +6,7 @@ use Filament\FilamentServiceProvider;
 use Filament\Support\SupportServiceProvider;
 use Livewire\LivewireServiceProvider;
 use MahmoudSehsah\FilamentResourceManager\FilamentResourceManagerServiceProvider;
+use MahmoudSehsah\FilamentResourceManager\Support\ProfileManager;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 abstract class TestCase extends Orchestra
@@ -34,6 +35,8 @@ abstract class TestCase extends Orchestra
     protected function setUp(): void
     {
         parent::setUp();
+
+        ProfileManager::forgetPending();
 
         foreach (glob(__DIR__.'/../database/migrations/*.php') as $migration) {
             (require $migration)->up();

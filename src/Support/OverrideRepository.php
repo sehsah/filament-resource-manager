@@ -113,6 +113,7 @@ class OverrideRepository
         static::$flushSuspended = false;
         TableColumns::flush();
         ProfileResolver::flush();
+        ProfileManager::forgetPending();
     }
 
     public static function flush(): void

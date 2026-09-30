@@ -4,6 +4,7 @@ namespace MahmoudSehsah\FilamentResourceManager\Filament\Concerns;
 
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
+use MahmoudSehsah\FilamentResourceManager\Support\ProfileManager;
 use MahmoudSehsah\FilamentResourceManager\Support\ResourceDiscovery;
 use MahmoudSehsah\FilamentResourceManager\Support\ResourceSynchroniser;
 use MahmoudSehsah\FilamentResourceManager\Support\SettingsReset;
@@ -57,6 +58,7 @@ trait ListsResourceSettings
                 ->modalDescription(__('filament-resource-manager::manager.actions.reset_confirm'))
                 ->action(function (): void {
                     SettingsReset::all(static::getResource()::getEloquentQuery());
+                    ProfileManager::publishPending();
 
                     Notification::make()
                         ->title(__('filament-resource-manager::manager.notifications.reset'))

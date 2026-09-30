@@ -25,6 +25,15 @@ trait EditsResourceSetting
         return $this->getRecord()->resource_class;
     }
 
+    /**
+     * Publish now rather than when the request ends, so the notification
+     * below can truthfully say the change is live.
+     */
+    protected function afterSave(): void
+    {
+        ProfileManager::publishPending();
+    }
+
     protected function getRedirectUrl(): ?string
     {
         return $this->getResource()::getUrl('index');
@@ -40,7 +49,7 @@ trait EditsResourceSetting
     {
         $profile = ProfileManager::governingProfile(ResourceDiscovery::panelId());
 
-        if ($profile === null) {
+        if ($profile === null || ProfileManager::autoPublishEnabled()) {
             return parent::getSavedNotification();
         }
 
@@ -67,6 +76,7 @@ trait EditsResourceSetting
                 ->modalDescription(__('filament-resource-manager::manager.actions.reset_one_confirm'))
                 ->action(function (): void {
                     SettingsReset::one($this->getRecord());
+                    ProfileManager::publishPending();
 
                     $this->fillForm();
 

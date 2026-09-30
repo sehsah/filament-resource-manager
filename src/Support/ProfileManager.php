@@ -48,6 +48,101 @@ class ProfileManager
         'is_orphaned',
     ];
 
+    /**
+     * Profiles whose draft changed through a resource setting and should be
+     * published again, keyed by profile id. Collected rather than published on
+     * the spot, so a burst of row saves - dragging rows, toggling visibility,
+     * "Reset all" - produces one new version instead of one per row.
+     *
+     * @var array<int|string, true>
+     */
+    protected static array $pendingPublish = [];
+
+    /**
+     * Whether a resource edit goes live on its own, or waits in the profile
+     * draft until someone publishes from Navigation Studio.
+     */
+    public static function autoPublishEnabled(): bool
+    {
+        return (bool) config('filament-resource-manager.profiles.auto_publish', true);
+    }
+
+    /**
+     * Publish every profile queued by a resource edit. Called straight after
+     * the edit page saves, and once more when the request, command or queued
+     * job ends to catch anything else that saved a setting.
+     *
+     * Only profiles that are already published are republished: an
+     * unpublished profile does not govern navigation, so publishing it here
+     * would switch navigation over to it behind the administrator's back.
+     *
+     * @return int the number of profiles published
+     */
+    public static function publishPending(mixed $actor = null): int
+    {
+        $ids = array_keys(static::$pendingPublish);
+        static::$pendingPublish = [];
+
+        if ($ids === [] || ! static::autoPublishEnabled()) {
+            return 0;
+        }
+
+        $published = 0;
+
+        try {
+            $profiles = static::profileModel()::query()
+                ->whereKey($ids)
+                ->whereNotNull('published_version_id')
+                ->get();
+        } catch (Throwable) {
+            return 0;
+        }
+
+        foreach ($profiles as $profile) {
+            try {
+                static::publish($profile, $actor);
+                $published++;
+            } catch (Throwable $exception) {
+                // The change is safe in the draft; it just is not live yet.
+                if (function_exists('report')) {
+                    report($exception);
+                }
+            }
+        }
+
+        return $published;
+    }
+
+    /** Drop anything queued without publishing it. */
+    public static function forgetPending(): void
+    {
+        static::$pendingPublish = [];
+    }
+
+    /** @param  array<int, int|string>  $profileIds */
+    protected static function queueAutoPublish(array $profileIds): void
+    {
+        if ($profileIds === [] || ! static::autoPublishEnabled()) {
+            return;
+        }
+
+        $wasEmpty = static::$pendingPublish === [];
+
+        foreach ($profileIds as $id) {
+            static::$pendingPublish[$id] = true;
+        }
+
+        if ($wasEmpty && function_exists('app')) {
+            try {
+                app()->terminating(static function (): void {
+                    static::publishPending();
+                });
+            } catch (Throwable) {
+                // No container to hook into; the explicit calls still publish.
+            }
+        }
+    }
+
     public static function ensureDefault(string $panelId): ?Model
     {
         if (! static::tablesExist()) {
@@ -369,9 +464,13 @@ class ProfileManager
             }
 
             if ($profileIds !== []) {
+                $profileIds = array_values(array_unique($profileIds));
+
                 static::profileModel()::query()
-                    ->whereKey(array_values(array_unique($profileIds)))
+                    ->whereKey($profileIds)
                     ->update(['status' => 'draft']);
+
+                static::queueAutoPublish($profileIds);
             }
         } catch (Throwable) {
             // Mirroring must never make saving the resource setting fail.

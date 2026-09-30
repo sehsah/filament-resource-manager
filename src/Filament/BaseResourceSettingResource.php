@@ -114,7 +114,11 @@ abstract class BaseResourceSettingResource extends Resource
     {
         return $table
             ->header(function () {
-                $profile = ProfileManager::governingProfile(ResourceDiscovery::panelId());
+                // With auto-publish on, edits here go live, so there is no
+                // "your changes wait in a draft" warning to give.
+                $profile = ProfileManager::autoPublishEnabled()
+                    ? null
+                    : ProfileManager::governingProfile(ResourceDiscovery::panelId());
 
                 return $profile === null
                     ? null

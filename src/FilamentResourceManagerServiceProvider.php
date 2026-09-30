@@ -3,11 +3,13 @@
 namespace MahmoudSehsah\FilamentResourceManager;
 
 use Filament\Navigation\NavigationManager;
+use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\ServiceProvider;
 use MahmoudSehsah\FilamentResourceManager\Commands\SyncResourcesCommand;
 use MahmoudSehsah\FilamentResourceManager\Navigation\ManagedNavigationManager;
 use MahmoudSehsah\FilamentResourceManager\Support\OverrideRepository;
+use MahmoudSehsah\FilamentResourceManager\Support\ProfileManager;
 
 class FilamentResourceManagerServiceProvider extends ServiceProvider
 {
@@ -67,6 +69,13 @@ class FilamentResourceManagerServiceProvider extends ServiceProvider
             'Laravel\\Octane\\Events\\TickReceived',
             JobProcessing::class,
         ], static fn (): mixed => OverrideRepository::resetState());
+
+        // A queued job has no terminating phase of its own, so a setting saved
+        // inside one is published when the job finishes.
+        $this->app['events']->listen(
+            JobProcessed::class,
+            static fn (): int => ProfileManager::publishPending(),
+        );
     }
 
     protected function registerTranslations(): void

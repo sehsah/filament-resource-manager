@@ -36,10 +36,19 @@ return [
     | versions may be deleted, while the current published version is always
     | protected.
     |
+    | "auto_publish" republishes the governing profile whenever a resource is
+    | changed from the Resource Manager (edit page, table toggles, reordering,
+    | reset), so the change is live at once. Each such change adds a version.
+    | Set it to false to collect changes in the draft and publish them yourself
+    | from Navigation Studio. Layout changes made in the studio itself always
+    | wait for an explicit publish - but note that an automatic publish takes
+    | the whole draft live, including any unpublished studio layout.
+    |
     */
 
     'profiles' => [
         'enabled' => true,
+        'auto_publish' => true,
         'models' => [
             'profile' => NavigationProfile::class,
             'item' => NavigationProfileItem::class,
