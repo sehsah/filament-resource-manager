@@ -4,12 +4,16 @@ namespace MahmoudSehsah\FilamentResourceManager\Filament\Concerns;
 
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Model;
+use Livewire\Attributes\Locked;
 use MahmoudSehsah\FilamentResourceManager\Support\AccessResolver;
 use MahmoudSehsah\FilamentResourceManager\Support\DynamicBadgeResolver;
 use MahmoudSehsah\FilamentResourceManager\Support\NavigationIcon;
+use MahmoudSehsah\FilamentResourceManager\Support\ProfileComparison;
 use MahmoudSehsah\FilamentResourceManager\Support\ProfileManager;
+use MahmoudSehsah\FilamentResourceManager\Support\ProfileTransfer;
 use MahmoudSehsah\FilamentResourceManager\Support\ResourceDiscovery;
 use MahmoudSehsah\FilamentResourceManager\Support\ResourceSynchroniser;
+use MahmoudSehsah\FilamentResourceManager\Support\RolePreview;
 use Throwable;
 
 trait ManagesNavigationStudio
@@ -24,6 +28,76 @@ trait ManagesNavigationStudio
     /** @var array<int, string> */
     public array $profileRoles = [];
 
+    public string $importJson = '';
+
+    public string $importName = '';
+
+    #[Locked]
+    public string $reviewedImportHash = '';
+
+    public bool $previewEnabled = false;
+
+    public array $previewRoles = [];
+
+    public array $previewPermissions = [];
+
+    public ?int $compareFrom = null;
+
+    public ?int $compareTo = null;
+
+    public function exportProfile(): mixed
+    {
+        $profile = $this->profile();
+        if (! $profile) {
+            return null;
+        }
+        $json = ProfileTransfer::export($profile);
+
+        return response()->streamDownload(fn () => print ($json), 'navigation-profile-'.$profile->getKey().'.json', ['Content-Type' => 'application/json']);
+    }
+
+    public function reviewImport(): void
+    {
+        $this->reviewedImportHash = '';
+        try {
+            $panel = ResourceDiscovery::panel();
+            if (! $panel || ! $this->profile()) {
+                return;
+            }
+            $data = ProfileTransfer::prepare($this->importJson, $panel);
+            if (trim($this->importName) === '') {
+                $this->importName = $data['name'];
+            }
+            $this->reviewedImportHash = hash('sha256', $this->importJson);
+        } catch (Throwable $exception) {
+            $this->notifyError($exception->getMessage());
+        }
+    }
+
+    public function importProfile(): void
+    {
+        try {
+            $panel = ResourceDiscovery::panel();
+            if (! $panel || ! $this->profile()) {
+                return;
+            }
+            if ($this->reviewedImportHash === '' || ! hash_equals($this->reviewedImportHash, hash('sha256', $this->importJson))) {
+                $this->notifyError(__('filament-resource-manager::manager.transfer.review_required'));
+
+                return;
+            }
+            $profile = ProfileTransfer::import($this->importJson, $panel, $this->importName);
+            $this->profileId = (int) $profile->getKey();
+            $this->importJson = '';
+            $this->importName = '';
+            $this->reviewedImportHash = '';
+            $this->updatedProfileId();
+            $this->notifySuccess(__('filament-resource-manager::manager.transfer.imported'));
+        } catch (Throwable $exception) {
+            $this->notifyError($exception->getMessage());
+        }
+    }
+
     public function mountManagesNavigationStudio(): void
     {
         $panel = ResourceDiscovery::panel();
@@ -35,11 +109,14 @@ trait ManagesNavigationStudio
         ResourceSynchroniser::sync($panel);
         $profile = ProfileManager::ensureDefault($panel->getId());
         $this->profileId = $profile?->getKey();
+        $this->compareFrom = $profile?->published_version_id;
         $this->loadStudioItems();
     }
 
     public function updatedProfileId(): void
     {
+        $this->compareFrom = $this->profile()?->published_version_id;
+        $this->compareTo = null;
         $this->loadStudioItems();
     }
 
@@ -58,7 +135,7 @@ trait ManagesNavigationStudio
             $profile = ProfileManager::create($panelId, $name, $this->profile());
             $this->profileId = (int) $profile->getKey();
             $this->newProfileName = '';
-            $this->loadStudioItems();
+            $this->updatedProfileId();
             $this->notifySuccess(__('filament-resource-manager::manager.notifications.profile_created'));
         } catch (Throwable $exception) {
             $this->notifyError($exception->getMessage());
@@ -208,7 +285,32 @@ trait ManagesNavigationStudio
             ->values()
             ->all();
 
-        return compact('profile', 'profiles', 'versions', 'versionCount', 'groups', 'availableRoles');
+        $importReview = null;
+        if ($this->reviewedImportHash !== '' && hash_equals($this->reviewedImportHash, hash('sha256', $this->importJson))) {
+            try {
+                $importReview = ProfileTransfer::prepare($this->importJson, ResourceDiscovery::panel());
+            } catch (Throwable) {
+                $this->reviewedImportHash = '';
+            }
+        }
+        $comparison = [];
+        $comparisonError = null;
+        $comparisonVersions = $profile?->versions()->latest('version')->get(['id', 'version']) ?? collect();
+        if ($profile && ($this->compareFrom !== null || $this->compareTo !== null)) {
+            try {
+                $comparison = ProfileComparison::compare($profile, $this->compareFrom, $this->compareTo);
+            } catch (Throwable) {
+                $comparisonError = __('filament-resource-manager::manager.comparison.unavailable');
+            }
+        }
+        $availablePermissions = AccessResolver::getAvailablePermissions();
+        $effectivePreviewPermissions = array_values(array_unique([...RolePreview::permissions($this->previewRoles), ...$this->previewPermissions]));
+        $previewReasons = $this->previewEnabled && $profile
+            ? RolePreview::reasons(ProfileManager::snapshot($profile), $this->previewRoles, $effectivePreviewPermissions, (array) $profile->roles)
+            : [];
+        $studioKey = hash('sha256', json_encode([$this->studioItems, $previewReasons, $this->previewEnabled]));
+
+        return compact('profile', 'profiles', 'versions', 'versionCount', 'groups', 'availableRoles', 'importReview', 'comparison', 'comparisonError', 'comparisonVersions', 'availablePermissions', 'effectivePreviewPermissions', 'previewReasons', 'studioKey');
     }
 
     protected function profile(): ?Model

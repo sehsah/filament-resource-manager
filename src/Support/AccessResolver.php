@@ -239,7 +239,7 @@ class AccessResolver
      * @param  array<int, string>  $userItems
      * @param  array<int, string>  $targetItems
      */
-    protected static function evaluateCondition(array $userItems, array $targetItems, string $condition): bool
+    public static function evaluateCondition(array $userItems, array $targetItems, string $condition): bool
     {
         $intersection = array_intersect($targetItems, $userItems);
 

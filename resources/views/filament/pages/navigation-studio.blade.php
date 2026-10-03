@@ -79,8 +79,23 @@
                 </div>
             </div>
 
+            @include('filament-resource-manager::filament.pages.studio-transfer')
+
             <script>
-                window.frmNavigationStudio = (initialItems, initialGroups) => ({
+                window.frmNavigationStudio = (initialItems, initialGroups, previewReasons) => ({
+                    previewReasons,
+                    reasonLabels: @js(__('filament-resource-manager::manager.role_preview.reasons')),
+                    reasons(item, seen = []) {
+                        const reasons = (this.previewReasons[item.resource_class] || []).filter(reason => reason !== 'hidden');
+                        if (!item.is_visible) reasons.push('hidden');
+                        if (item.parent_resource_class) {
+                            const parent = this.find(item.parent_resource_class);
+                            if (!parent || parent.parent_resource_class || this.groupKey(parent.navigation_group) !== this.groupKey(item.navigation_group) || seen.includes(item.resource_class) || this.reasons(parent, [...seen, item.resource_class]).length) reasons.push('parent');
+                        }
+                        return [...new Set(reasons)];
+                    },
+                    visible(item) { return this.reasons(item).length === 0; },
+                    reasonText(item) { return this.reasons(item).map(reason => this.reasonLabels[reason]).join(' · '); },
                     items: initialItems,
                     groups: initialGroups,
                     dragged: null,
@@ -185,8 +200,8 @@
             </script>
 
             <div
-                wire:key="navigation-studio-{{ $profile->getKey() }}-{{ $profile->updated_at?->timestamp }}"
-                x-data="frmNavigationStudio(@js($studioItems), @js($groups))"
+                wire:key="navigation-studio-{{ $profile->getKey() }}-{{ $studioKey }}"
+                x-data="frmNavigationStudio(@js($studioItems), @js($groups), @js($previewReasons))"
                 class="frm-studio-grid"
             >
                 <x-filament::section class="frm-builder-section">
@@ -317,6 +332,7 @@
                     <x-slot name="heading">{{ __('filament-resource-manager::manager.studio.live_preview') }}</x-slot>
                     <x-slot name="description">{{ __('filament-resource-manager::manager.studio.preview_hint') }}</x-slot>
 
+                    @include('filament-resource-manager::filament.pages.studio-role-preview')
                     <aside class="frm-preview">
                         <div class="frm-preview-header">
                             <div class="frm-preview-mark" aria-hidden="true">
@@ -334,9 +350,9 @@
                             <span class="frm-live-dot" aria-hidden="true"></span>
                         </div>
                         <template x-for="group in groups" :key="'preview-' + group.key">
-                            <div x-show="topItems(group.key).some(item => item.is_visible)" class="frm-preview-group">
+                            <div x-show="topItems(group.key).some(item => visible(item))" class="frm-preview-group">
                                 <div x-show="group.key" class="frm-preview-group-label" x-text="group.label"></div>
-                                <template x-for="item in topItems(group.key).filter(item => item.is_visible)" :key="'preview-item-' + item.resource_class">
+                                <template x-for="item in topItems(group.key).filter(item => visible(item))" :key="'preview-item-' + item.resource_class">
                                     <div>
                                         <div class="frm-preview-item">
                                             <span x-show="item.icon_html" class="frm-preview-icon" aria-hidden="true" x-html="item.icon_html"></span>
@@ -351,7 +367,7 @@
                                             <span class="frm-preview-label" x-text="item.label"></span>
                                             <span x-show="item.badge" class="frm-badge" x-text="item.badge"></span>
                                         </div>
-                                        <template x-for="child in childItems(item.resource_class).filter(child => child.is_visible)" :key="'preview-child-' + child.resource_class">
+                                        <template x-for="child in childItems(item.resource_class).filter(child => visible(child))" :key="'preview-child-' + child.resource_class">
                                             <div class="frm-preview-item frm-preview-child">
                                                 <svg class="frm-child-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                                                     <path d="M7 5v8a3 3 0 0 0 3 3h8M15 13l3 3-3 3" />
@@ -364,9 +380,18 @@
                                 </template>
                             </div>
                         </template>
+                        <div x-show="!items.some(item => visible(item))" class="frm-empty-group">{{ __('filament-resource-manager::manager.role_preview.empty') }}</div>
                     </aside>
+                    <details class="frm-review-block">
+                        <summary>{{ __('filament-resource-manager::manager.role_preview.hidden_items') }}</summary>
+                        <template x-for="item in items.filter(item => !visible(item))" :key="'reason-' + item.resource_class">
+                            <p class="frm-review-block"><strong x-text="item.label"></strong><br><span x-text="reasonText(item)"></span></p>
+                        </template>
+                    </details>
                 </x-filament::section>
             </div>
+
+            @include('filament-resource-manager::filament.pages.studio-comparison')
 
             <div class="frm-lower-grid">
                 <x-filament::section>
@@ -445,6 +470,18 @@
 
     <style>
         [x-cloak] { display: none !important; }
+        .frm-review-block { margin-block: .8rem; font-size: .85rem; }
+        .frm-review-block summary { cursor: pointer; font-weight: 600; }
+        .frm-review-block pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 18rem; overflow: auto; }
+        .frm-review-table-wrap { overflow-x: auto; margin-top: 1rem; }
+        .frm-review-table { width: 100%; border-collapse: collapse; font-size: .8rem; text-align: start; }
+        .frm-review-table th, .frm-review-table td { padding: .65rem; border-bottom: 1px solid rgb(var(--frm-border)); text-align: start; vertical-align: top; }
+        .frm-review-table pre { white-space: pre-wrap; overflow-wrap: anywhere; max-width: 26rem; max-height: 14rem; overflow: auto; }
+        .frm-review-controls { display: flex; flex-wrap: wrap; gap: .8rem; margin-block: .8rem; }
+        .frm-review-controls .frm-field { flex: 1; min-width: 12rem; }
+        .frm-role-preview { margin-bottom: 1rem; }
+        .frm-role-preview select { min-height: 5rem; }
+        .frm-import-json { width: 100%; min-height: 9rem; font-family: monospace; }
 
         .frm-theme {
             --frm-surface: 255, 255, 255;

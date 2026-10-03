@@ -175,6 +175,9 @@ return [
     */
 
     'access_control' => [
+        // Optional role-to-permission mapping for the Studio simulation when
+        // roles are not backed by Spatie Permission. This does not grant access.
+        'role_permissions' => [],
         'roles' => [],
         'permissions' => [],
         'models' => [

@@ -137,13 +137,68 @@ history of published versions:
 
 The table and edit page, and the studio, are two views of the same navigation:
 
-- Saving the edit page writes into the default profile's draft as well, and the
-  page says so. Because the published snapshot is never edited in place, the
-  change reaches the sidebar when you publish again.
+- Saving the edit page writes into the governing profile's draft as well. With
+  `profiles.auto_publish` enabled (the default), the draft is immediately
+  published as a new version. Disable it to publish changes manually.
 - Saving a layout in the studio writes the placement — group, nesting, order,
   visibility — back to the settings table, so both screens keep showing the
   same thing.
 - Other profiles are left alone; they are alternative layouts, not copies.
+
+### Import and export profiles
+
+In Navigation Studio, **Export draft as JSON** downloads the selected profile's
+saved draft, including its audience, navigation overrides, icons, badges and
+visibility rules. The file has a versioned format and uses resource class names
+instead of database IDs, so it can move between environments.
+
+Open **Import a profile**, choose a JSON file (up to 1 MB) or paste its contents,
+then **Validate and preview**. Review the settings, choose a new profile name,
+and select **Create imported draft**. Import always creates a new, unpublished
+profile in the current panel; it does not replace or publish an existing profile,
+even when automatic publishing is enabled. Publish separately when ready.
+
+Resources, roles, permissions, and dynamic badge models/columns must exist in the
+destination. Unknown entries, duplicate resources, invalid field values and
+circular parent relationships are rejected. SVG markup is sanitized before the
+preview. Resource defaults are resolved in the destination; resources omitted
+from the file retain the destination panel's current settings in the new draft.
+Uploaded image files are **not** bundled: copy referenced images to the configured
+storage disk separately.
+
+### Role preview
+
+Enable **Preview as roles** beside the live preview and choose one or more roles.
+The preview applies the selected saved draft's audience, visibility, and any/all
+role and permission rules. **Hidden items and reasons** explains excluded items,
+including those whose parent is hidden. This previews the selected draft, not the
+published profile resolver's choice. An empty role selection represents an
+authenticated user with no roles.
+
+Permissions are loaded from Spatie roles for the panel's authentication guard.
+For a custom role system, supply a simulation mapping:
+
+```php
+'access_control' => [
+    'role_permissions' => [
+        'manager' => ['view_orders', 'edit_orders'],
+    ],
+],
+```
+
+You can also select **Additional permissions** in the preview. This is a navigation
+rule simulation: it does not impersonate a user, execute application policies, or
+invoke custom user-specific role/permission resolvers. Dynamic badge counts still
+use the current administrator's context. Previewing never changes saved settings.
+
+### Version comparison
+
+**Version comparison** shows changes between two published versions, or between a
+published version and the saved draft. It starts with the current published
+version versus the draft when one exists. Choose **Before** and **After** to
+change the comparison. Added and removed resources, per-field before/after values,
+and profile audience changes are included. Versions are scoped to the selected
+profile, and comparison never modifies drafts or history.
 
 Set `profiles.enabled` to `false` in the config to switch profiles off
 entirely. Nothing has been published until you open the studio and publish, so
@@ -172,8 +227,9 @@ the published config:
 ],
 ```
 
-Dynamic badge changes are copied into profile drafts. Publish the profile from
-Navigation Studio when the new count is ready to become visible to users.
+Dynamic badge changes are copied into profile drafts and follow
+`profiles.auto_publish`. When it is disabled, publish from Navigation Studio
+when the new count is ready to become visible to users.
 
 > **Hiding is a navigation setting, not an access control.** A hidden resource's
 > URLs still work for anyone allowed to visit them. Use policies or
